@@ -23,7 +23,7 @@ dhanhq==2.0.1
 streamlit==1.54.0
 
 # Utilities
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 jupyter==1.0.0
 requests==2.33.0
 
