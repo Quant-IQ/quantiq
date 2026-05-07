@@ -4,7 +4,6 @@
 - **Role:** [e.g., Data Engineer, Dev, Quant, Docs, Co-Lead]
 - **GitHub Username:** [@username](https://github.com/username)
 - **Discord Handle:** @username
-- **Timezone:** [e.g., IST, GMT, EST]
 
 ## 🎯 Project Goals
 *What do you want to get out of the QuantIQ project over the next 12 weeks?*
