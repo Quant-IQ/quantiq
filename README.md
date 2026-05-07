@@ -25,7 +25,7 @@ A working paper-trading bot targeting NSE equity stocks using the Dhan API. Buil
 ## Setup
 ```bash
 # Clone the repository
-git clone https://github.com
+git clone https://github.com/Quant-IQ/quantiq
 cd quantiq
 
 # Create and activate virtual environment
