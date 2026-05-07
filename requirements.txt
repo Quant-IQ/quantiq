@@ -1,0 +1,34 @@
+# QuantIQ — Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Data
+pandas==2.1.4
+numpy==1.2.6.2
+yfinance==0.2.35
+
+# Technical Analysis
+ta==0.11.0
+
+# Backtesting
+vectorbt==0.26.1
+
+# Charting
+plotly==5.18.0
+matplotlib==3.8.2
+
+# Broker API
+dhanhq==2.0.1
+
+# Dashboard
+streamlit==1.3.1.0
+
+# Utilities
+python-dotenv==1.0.0
+jupyter==1.0.0
+requests==2.31.0
+
+# PIN YOUR VERSIONS
+# Pinning exact versions ensures identical environments for all team members, 
+# preventing "works on my machine" bugs. Update versions only when a 
+# specific library upgrade is required and tested.
+# Run 'pip freeze > requirements.txt' after adding any new package.
