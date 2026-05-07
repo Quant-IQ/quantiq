@@ -3,7 +3,7 @@
 
 # Data
 pandas==2.1.4
-numpy==1.2.6.2
+numpy==1.22.0
 yfinance==0.2.35
 
 # Technical Analysis
