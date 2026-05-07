@@ -25,7 +25,7 @@ streamlit==1.54.0
 # Utilities
 python-dotenv==1.0.0
 jupyter==1.0.0
-requests==2.31.0
+requests==2.33.0
 
 # PIN YOUR VERSIONS
 # Pinning exact versions ensures identical environments for all team members, 
