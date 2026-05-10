@@ -18,5 +18,3 @@
 - **Git/GitHub:** [Level]
 - **Financial Markets:** [Level]
 
-## ⚡ Fun Fact / Icebreaker
-[Add one random fun fact about yourself!]
