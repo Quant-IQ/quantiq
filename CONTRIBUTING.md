@@ -155,6 +155,51 @@ Reviews must be posted within 48 hours of being assigned.
 
 ---
 
+## After Your PR Is Merged — Branch Cleanup
+
+Once your PR is merged into `main`, clean up immediately. Stale local branches accumulate fast on a 9-person team and make `git branch` unreadable.
+
+```bash
+# Step 1 — Switch back to main
+git checkout main
+
+# Step 2 — Pull the merged changes (your work is now in here)
+git pull origin main
+
+# Step 3 — Delete your local branch (it's already in main, so this is safe)
+git branch -d feature/your-feature-name
+# Use -D (capital) only if git refuses -d and you are sure the branch is merged
+git branch -D feature/your-feature-name
+
+# Step 4 — Prune stale remote-tracking refs
+# This removes entries like "origin/feature/your-feature-name" that no longer exist on GitHub
+git fetch --prune
+
+# Step 5 — Verify your branch is gone
+git branch        # local branches
+git branch -r     # remote-tracking branches — your branch should not appear
+```
+
+### See All Stale Branches at Once
+
+```bash
+# Branches already merged into main (safe to delete)
+git branch --merged main
+
+# Remote branches that have been deleted on GitHub but still tracked locally
+git remote prune origin --dry-run
+```
+
+### One-Liner Full Cleanup (run after any merge)
+
+```bash
+git checkout main && git pull origin main && git fetch --prune
+```
+
+> **Rule:** Delete your branch the same day your PR merges. Do not let merged branches sit around — it creates confusion about what is active work.
+
+---
+
 ## Troubleshooting & Common Scenarios
 
 ### I committed to the wrong branch
@@ -203,6 +248,24 @@ git commit -m "chore: remove .env from tracking"
 
 For a full history scrub, contact the Project Lead.
 
+### My branch is far behind main (lots of conflicts expected)
+
+```bash
+# Interactive rebase onto latest main — replays your commits on top cleanly
+git checkout main
+git pull origin main
+git checkout your-branch
+git rebase main
+# Resolve conflicts per commit if they appear:
+#   git add <resolved-file>
+#   git rebase --continue
+# To abort and go back to how things were:
+#   git rebase --abort
+git push --force-with-lease origin your-branch  # safe force-push — only pushes if no one else pushed
+```
+
+> Use `--force-with-lease` over `--force` when you must force-push. It refuses if the remote has changes you haven't seen, preventing accidental overwrites.
+
 ### I want to undo my last commit (not yet pushed)
 
 ```bash
@@ -210,3 +273,71 @@ git reset --soft HEAD~1 # keeps your changes staged
 git reset HEAD~1        # keeps changes unstaged
 git reset --hard HEAD~1 # DISCARDS changes (careful!)
 ```
+
+### I need to undo a commit I already pushed
+
+```bash
+git revert <commit-hash>   # creates a new commit that undoes the target commit
+git push origin your-branch
+```
+
+> Use `git revert` over `git reset --hard` for pushed commits — it adds an undo commit rather than rewriting history, which is safe for shared branches.
+
+---
+
+## Essential Git Command Reference
+
+### Setup & Clone
+
+| Command | What it does |
+| --- | --- |
+| `git clone <url>` | Download a repo to your machine |
+| `git clone <url> --branch main` | Clone a specific branch |
+| `git remote -v` | Show where local repo points to |
+| `git config --global user.email "x"` | Set your email for commits |
+| `git config --global user.name "x"` | Set your name for commits |
+
+### Daily Workflow
+
+| Command | What it does |
+| --- | --- |
+| `git status` | See what changed since last commit |
+| `git diff` | See unstaged changes line by line |
+| `git diff --staged` | See what is staged ready to commit |
+| `git add <file>` | Stage one specific file |
+| `git add .` | Stage all changed files |
+| `git add -p` | Stage chunks interactively (recommended) |
+| `git commit -m "type: msg"` | Commit staged changes |
+| `git commit --amend` | Edit the most recent commit message |
+| `git push origin branch-name` | Upload branch to GitHub |
+| `git pull origin main` | Fetch + merge latest main into current |
+
+### Branching
+
+| Command | What it does |
+| --- | --- |
+| `git checkout -b feature/name` | Create + switch to new branch |
+| `git checkout main` | Switch to main branch |
+| `git branch` | List all local branches |
+| `git branch -d feature/name` | Delete a branch locally after merge |
+| `git merge main` | Merge latest main into current branch |
+
+### History & Undo
+
+| Command | What it does |
+| --- | --- |
+| `git log --oneline` | Compact commit history |
+| `git log --oneline --graph` | Branch + merge visualisation |
+| `git show <commit-hash>` | See exactly what a commit changed |
+| `git stash` | Temporarily shelve uncommitted changes |
+| `git stash pop` | Restore stashed changes |
+| `git restore <file>` | Discard uncommitted changes |
+| `git revert <commit>` | Undo a commit safely (creates new commit) |
+
+### Collaboration
+
+| Command | What it does |
+| --- | --- |
+| `git fetch origin` | Download remote changes without merging |
+| `git blame <file>` | See who last changed each line |
+| `git shortlog -sn` | Summary: who made how many commits |
