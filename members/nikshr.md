@@ -12,9 +12,9 @@
 ## 🛠️ Current Tech Stack & Familiarity
 *List your current comfort level with our core tools (Beginner, Intermediate, Advanced).*
 - **Python:** Intermediate
-- **Pandas/Data Science:** Begineer
+- **Pandas/Data Science:** Beginner
 - **Git/GitHub:** Beginner
-- **Financial Markets:** Begineer
+- **Financial Markets:** Beginner
 
 ## ⚡ Fun Fact / Icebreaker
 Baller.
