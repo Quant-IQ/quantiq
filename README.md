@@ -21,17 +21,25 @@ QuantIQ is a collaborative 12-week project to build a working paper-trading bot 
 
 ## Team
 
-| Name | Role                 | Status  |
-| :--- | :------------------- | :------ |
-| RS   | Project Lead         | Active  |
-| EB   | Analyst / Docs       | Active  |
-| RT   | Quant / Strategy     | Active  |
-| GT   | Quant / Strategy     | Active  |
-| AR   | Dev / Infra          | Active  |
-| AV   | Data Engineer        | Active  |
-| NS   | Analyst / Docs (TBD) | Pending |
-| AD   | Dev / Infra (TBD)    | Pending |
-| AJ   | Data Engineer (TBD)  | Pending |
+Phase 1 roles assigned 17 May 2026. Reviewed again at end of Phase 1. P = primary, S = secondary.
+
+| Name | Role                                    | Status          |
+| :--- | :-------------------------------------- | :-------------- |
+| RS   | Project Lead                            | Active          |
+| EB   | Docs (P) \| Dev (S)                     | Active          |
+| GT   | Quant / Strategy (P) \| Data (S)        | Active          |
+| AV   | Quant / Strategy (P) \| Data (S)        | Active          |
+| AR   | Dev / Infra (P) \| Data (S)             | Active          |
+| RT   | Quant / Strategy (P) \| Data (S)        | Active          |
+| NS   | Docs (P) \| Dev (S)                     | Active          |
+| AJ   | Quant (P) \| Data (S)                   | Phase 0 pending |
+| SS   | Quant (P) \| Docs (S)                   | Phase 0 pending |
+| SmS  | Docs (P) \| Data (S)                    | Active          |
+| AK   | Dev (P) \| Data (S)                     | Active          |
+| ShS  | Docs (P) \| Dev (S)                     | Phase 0 pending |
+| HG   | Docs (P) \| Quant (S)                   | Phase 0 pending |
+
+*Roles reviewed end of Phase 1 / start of Phase 2.*
 
 ---
 
