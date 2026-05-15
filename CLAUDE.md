@@ -425,22 +425,29 @@ Labels in use: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-
 
 ## 8. Team Structure
 
-| Handle | Role             | Role Colour | Owns                                                |
-| ------ | ---------------- | ----------- | --------------------------------------------------- |
-| RS     | Project Lead     | `#F0C040`   | Repo, Discord, AppFlowy, decisions, unblocking      |
-| EB     | Analyst / Docs   | `#FF7B9C`   | README, AppFlowy log, Streamlit dashboard           |
-| GT     | Quant / Strategy | `#F0883E`   | Strategy design, backtesting, indicator research    |
-| AV     | Data Engineer    | `#BC8CFF`   | Data pipelines, indicator functions, backtest feeds |
-| AR     | Dev / Infra      | `#58A6FF`   | Bot engine, Dhan API, execution loop                |
-| RT     | Quant / Strategy | `#F0883E`   | Strategy design, backtesting, indicator research    |
-| NS     | Analyst / Docs   | `#FF7B9C`   | Support — Phase 0 incomplete (catch-up pending)     |
-| AJ     | Data Engineer    | `#BC8CFF`   | Support — Phase 0 incomplete (catch-up pending)     |
-| AD     | Dev / Infra      | `#58A6FF`   | Support — Phase 0 incomplete (catch-up pending)     |
+Roles assigned for Phase 1 on **17 May 2026**. Will be reviewed again at end of Phase 1 or start of Phase 2 based on actual performance. Roles marked (P) primary, (S) secondary.
 
-**Team size:** 9 confirmed. One member withdrew before Phase 1. No replacement planned.
+| Handle | Role (P / S) — Phase 1          | Role Colour | Owns                                                |
+| ------ | ------------------------------- | ----------- | --------------------------------------------------- |
+| RS     | Project Lead / All              | `#F0C040`   | Repo, Discord, AppFlowy, decisions, unblocking      |
+| EB     | Docs (P) / Dev (S)              | `#FF7B9C`   | README, AppFlowy log, Streamlit dashboard           |
+| GT     | Quant / Strategy (P) / Data (S) | `#F0883E`   | Strategy design, backtesting, indicator research    |
+| AV     | Quant / Strategy (P) / Data (S) | `#BC8CFF`   | Strategy support, data pipelines, indicator work    |
+| AR     | Dev / Infra (P) / Data (S)      | `#58A6FF`   | Bot engine, Dhan API, execution loop                |
+| RT     | Quant / Strategy (P) / Data (S) | `#F0883E`   | Strategy design, backtesting, indicator research    |
+| NS     | Docs (P) / Dev (S)              | `#FF7B9C`   | Phase 1 role assigned 17 May                        |
+| AJ     | Quant (P) / Data (S)            | `#F0883E`   | Phase 1 role assigned 17 May                        |
+| SS     | Quant (P) / Docs (S)            | `#F0883E`   | New member — Phase 0 pending                        |
+| SmS    | Docs (P) / Data (S)             | `#FF7B9C`   | New member — Phase 0 pending                        |
+| AK     | Dev (P) / Data (S)              | `#58A6FF`   | New member — Phase 0 pending                        |
+| ShS    | Docs (P) / Dev (S)              | `#FF7B9C`   | New member — Phase 0 pending                        |
+| HG     | Docs (P) / Quant (S)            | `#FF7B9C`   | New member — Phase 0 pending (RS overseeing)        |
+
+**Team size:** 13 confirmed members. AD departed before Phase 1. Roles reviewed again at end of Phase 1 / start of Phase 2. Target: 12–14 active members, natural attrition expected to stabilise at 8–12 by Phase 4.
+
+**Co-Lead role:** Vacant. To be assigned end of Phase 1 or Phase 2 as team scales. Sub-team structure planned for 14+ members: Project Lead → Co-Lead (Quant/Data) + Co-Lead (Dev/Docs).
 
 **Attrition rule:** Two consecutive missed standups with no explanation = voluntary exit.
-NS, AJ, AD are on the watch list — reliability unproven.
 
 ---
 
@@ -502,7 +509,10 @@ This email is for AppFlowy Cloud login and shared project comms only — it does
 | 10  | CS50P over paid Udemy courses         | Free, equivalent quality, no cost barrier for team       |
 | 11  | Paper trade only until team consensus | Never touch real capital without full team agreement     |
 | 12  | RT assigned Quant / Strategy          | Co-assigned with GT for strategy and backtesting         |
-| 13  | EB assigned Analyst / Docs            | Owns README, AppFlowy log, and Streamlit dashboard       |
+| 13  | EB primary Docs, secondary Data       | Owns README, AppFlowy log, Streamlit dashboard           |
+| 14  | Co-Lead vacant — end of Phase 1 or 2  | Roles and strengths being established; team scaling      |
+| 15  | Dual-role model (P/S) for all members | Primary = ownership; secondary = support / cross-train   |
+| 16  | Second recruitment wave — up to 6 new | All who pass interview treated as full members           |
 
 ---
 
