@@ -32,11 +32,11 @@ Phase 1 roles assigned 17 May 2026. Reviewed again at end of Phase 1. P = primar
 | AR   | Dev / Infra (P) \| Data (S)             | Active          |
 | RT   | Quant / Strategy (P) \| Data (S)        | Active          |
 | NS   | Docs (P) \| Dev (S)                     | Active          |
-| AJ   | Quant (P) \| Data (S)                   | Phase 0 pending |
-| SS   | Quant (P) \| Docs (S)                   | Phase 0 pending |
+| AJ   | Quant (P) \| Data (S)                   | Active          |
+| SS   | Quant (P) \| Docs (S)                   | Active          |
 | SmS  | Docs (P) \| Data (S)                    | Active          |
 | AK   | Dev (P) \| Data (S)                     | Active          |
-| ShS  | Docs (P) \| Dev (S)                     | Phase 0 pending |
+| ShS  | Docs (P) \| Dev (S)                     | Active          |
 | HG   | Docs (P) \| Quant (S)                   | Phase 0 pending |
 
 *Roles reviewed end of Phase 1 / start of Phase 2.*
