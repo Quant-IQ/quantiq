@@ -435,15 +435,15 @@ Roles assigned for Phase 1 on **17 May 2026**. Will be reviewed again at end of 
 | AV     | Quant / Strategy (P) / Data (S) | `#BC8CFF`   | Strategy support, data pipelines, indicator work    |
 | AR     | Dev / Infra (P) / Data (S)      | `#58A6FF`   | Bot engine, Dhan API, execution loop                |
 | RT     | Quant / Strategy (P) / Data (S) | `#F0883E`   | Strategy design, backtesting, indicator research    |
-| NS     | Docs (P) / Dev (S)              | `#FF7B9C`   | Phase 1 role assigned 17 May                        |
-| AJ     | Quant (P) / Data (S)            | `#F0883E`   | Phase 1 role assigned 17 May                        |
-| SS     | Quant (P) / Docs (S)            | `#F0883E`   | New member — Phase 0 pending                        |
-| SmS    | Docs (P) / Data (S)             | `#FF7B9C`   | New member — Phase 0 pending                        |
-| AK     | Dev (P) / Data (S)              | `#58A6FF`   | New member — Phase 0 pending                        |
-| ShS    | Docs (P) / Dev (S)              | `#FF7B9C`   | New member — Phase 0 pending                        |
+| NS     | Docs (P) / Dev (S)              | `#FF7B9C`   | README, AppFlowy log — introduced at 17 May sync    |
+| AJ     | Quant (P) / Data (S)            | `#F0883E`   | Strategy research, indicator work                   |
+| SS     | Quant (P) / Docs (S)            | `#F0883E`   | Strategy research, documentation support            |
+| SmS    | Docs (P) / Data (S)             | `#FF7B9C`   | README, AppFlowy log, data pipeline support         |
+| AK     | Dev (P) / Data (S)              | `#58A6FF`   | Bot engine support, data pipeline                   |
+| ShS    | Docs (P) / Dev (S)              | `#FF7B9C`   | README, AppFlowy log, dev support                   |
 | HG     | Docs (P) / Quant (S)            | `#FF7B9C`   | New member — Phase 0 pending (RS overseeing)        |
 
-**Team size:** 13 confirmed members. AD departed before Phase 1. Roles reviewed again at end of Phase 1 / start of Phase 2. Target: 12–14 active members, natural attrition expected to stabilise at 8–12 by Phase 4.
+**Team size:** 13 confirmed members (12 Phase 0 complete, 1 pending). AD departed before Phase 1. Roles reviewed again at end of Phase 1 / start of Phase 2. Target: 12–14 active members, natural attrition expected to stabilise at 8–12 by Phase 4.
 
 **Co-Lead role:** Vacant. To be assigned end of Phase 1 or Phase 2 as team scales. Sub-team structure planned for 14+ members: Project Lead → Co-Lead (Quant/Data) + Co-Lead (Dev/Docs).
 
