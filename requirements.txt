@@ -17,7 +17,7 @@ plotly==5.18.0
 matplotlib==3.8.2
 
 # Broker API
-dhanhq==2.0.1
+dhanhq==2.0.2
 
 # Dashboard
 streamlit==1.54.0
