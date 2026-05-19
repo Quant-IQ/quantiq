@@ -1,34 +1,34 @@
 # QuantIQ — Python Dependencies
 # Install with: pip install -r requirements.txt
+# Python 3.12 required. 3.13+ breaks data libraries (vectorbt/Numba).
 
 # Data
-pandas==2.1.4
-numpy==1.26.4
-yfinance==0.2.35
+pandas==2.2.3
+numpy==1.26.4          # Numba requires numpy<2.0 for stability
+yfinance==1.3.0        # NSE tickers require .NS suffix (e.g. RELIANCE.NS)
 
 # Technical Analysis
-ta==0.11.0
+ta==0.11.0             # Pure Python; requires numpy<2.0
 
 # Backtesting
-vectorbt==0.26.1
+vectorbt==1.0.0        # Free OSS Community Edition (Apache 2.0, released Apr 2026)
 
 # Charting
-plotly==5.18.0
-matplotlib==3.8.2
+plotly==5.24.0
+matplotlib==3.9.2
 
 # Broker API
-dhanhq==2.0.1
+dhanhq==2.0.2          # 2.1.x yanked from PyPI; last stable before 2.2.0 breaking changes
 
 # Dashboard
-streamlit==1.54.0
+streamlit==1.57.0
 
 # Utilities
 python-dotenv==1.2.2
-jupyter==1.0.0
-requests==2.33.0
+jupyter==1.1.1
+requests==2.34.2
+websockets==16.0       # dhanhq 2.0.2+ WebSocket feed requires >=14.1
 
 # PIN YOUR VERSIONS
-# Pinning exact versions ensures identical environments for all team members, 
-# preventing "works on my machine" bugs. Update versions only when a 
-# specific library upgrade is required and tested.
 # Run 'pip freeze > requirements.txt' after adding any new package.
+# Dhan access tokens expire every 24hr (SEBI). Refresh daily before 9:15 AM IST.
