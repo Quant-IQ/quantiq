@@ -3,7 +3,7 @@
 > End-to-end algorithmic trading system · NSE Indian equity market · Python
 
 ![Status](https://img.shields.io/badge/Status-In%20_Progress-%20?labelColor=0d1117&color=3fb950)
-![Python](https://img.shields.io/badge/Language-Python-yellow?logo=python&logoColor=rgb(52%2C%20118%2C%20169)&labelColor=ffd53d&color=rgb(52%2C%20118%2C%20169))
+![Python](<https://img.shields.io/badge/Language-Python-yellow?logo=python&logoColor=rgb(52%2C%20118%2C%20169)&labelColor=ffd53d&color=rgb(52%2C%20118%2C%20169)>)
 ![Broker](https://img.shields.io/badge/Dhan-Broker?label=Broker&labelColor=ffffff&color=4fbb94)
 ![Repo](https://img.shields.io/badge/Visibility-Public-Green)
 
@@ -23,30 +23,30 @@ QuantIQ is a collaborative 12-week project to build a working paper-trading bot 
 
 Phase 1 roles assigned 17 May 2026. Reviewed again at end of Phase 1. P = primary, S = secondary.
 
-| Name | Role                                    | Status          |
-| :--- | :-------------------------------------- | :-------------- |
-| RS   | Project Lead                            | Active          |
-| EB   | Docs (P) \| Dev (S)                     | Active          |
-| GT   | Quant / Strategy (P) \| Data (S)        | Active          |
-| AV   | Quant / Strategy (P) \| Data (S)        | Active          |
-| AR   | Dev / Infra (P) \| Data (S)             | Active          |
-| RT   | Quant / Strategy (P) \| Data (S)        | Active          |
-| NS   | Docs (P) \| Dev (S)                     | Active          |
-| AJ   | Quant (P) \| Data (S)                   | Active          |
-| SS   | Quant (P) \| Docs (S)                   | Active          |
-| SmS  | Docs (P) \| Data (S)                    | Active          |
-| AK   | Dev (P) \| Data (S)                     | Active          |
-| ShS  | Docs (P) \| Dev (S)                     | Active          |
-| HG   | Docs (P) \| Quant (S)                   | Phase 0 pending |
+| Name | Role                                         | Status          |
+| :--- | :------------------------------------------- | :-------------- |
+| RS   | Project Lead                                 | Active          |
+| EB   | Analyst / Docs (P) \| Dev / Infra (S)        | Active          |
+| GT   | Quant / Strategy (P) \| Analyst / Docs (S)   | Active          |
+| AV   | Quant / Strategy (P) \| Data Engineering (S) | Active          |
+| AR   | Data Engineering (P) \| Dev / Infra (S)      | Active          |
+| RT   | Quant / Strategy (P) \| Dev / Infra (S)      | Active          |
+| NS   | Dev / Infra (P) \| Data Engineering (S)      | Active          |
+| AJ   | Data Engineering (P) \| Quant / Strategy (S) | Active          |
+| SS   | Quant / Strategy (P) \| Analyst / Docs (S)   | Active          |
+| SmS  | Data Engineering (P) \| Analyst / Docs (S)   | Active          |
+| AK   | Dev / Infra (P) \| Data Engineering (S)      | Active          |
+| ShS  | Analyst / Docs (P) \| Dev / Infra (S)        | Active          |
+| HG   | Analyst / Docs (P) \| Quant / Strategy (S)   | Phase 0 pending |
 
-*Roles reviewed end of Phase 1 / start of Phase 2.*
+_Roles reviewed end of Phase 1 / start of Phase 2._
 
 ---
 
 ## Roadmap
 
 | Phase                   | Weeks | Deliverable                                   | Status         |
-| :---------------------- | :---: | :-------------------------------------------- | :------------  |
+| :---------------------- | :---: | :-------------------------------------------- | :------------- |
 | 0 — Onboarding          |   1   | First commit from every member                | ✅ Complete    |
 | 1 — Foundations         |  2–4  | Python script: fetch + analyse NSE stock data | 🔄 In Progress |
 | 2 — Data & Analysis     |  5–7  | Shared `market_analysis.ipynb` on GitHub      | ⏳ Pending     |
@@ -133,12 +133,12 @@ quantiq/
 
 ## Communication & Tools
 
-| Tool       | Purpose                                               |
-| :--------- | :---------------------------------------------------- |
-| Discord    | Primary team communication — all project discussions  |
-| AppFlowy   | Docs, weekly log, decisions log, Kanban overview      |
-| GitHub     | Code, PRs, Issues, Projects board                     |
-| WhatsApp   | Urgent personal messages only — not project tracking  |
+| Tool     | Purpose                                              |
+| :------- | :--------------------------------------------------- |
+| Discord  | Primary team communication — all project discussions |
+| AppFlowy | Docs, weekly log, decisions log, Kanban overview     |
+| GitHub   | Code, PRs, Issues, Projects board                    |
+| WhatsApp | Urgent personal messages only — not project tracking |
 
 > Discord channel guide: `#standup` (Monday standups only) · `#dev` (code + PRs) · `#markets` (strategy) · `#data` (pipelines) · `#resources` (links only)
 
@@ -161,5 +161,5 @@ Algo trading on your own account for personal use is legal in India under SEBI g
 
 ---
 
-*README is a living document. Updated at the end of each phase by the Analyst / Docs role.*  
-*Last updated: Week 1*
+_README is a living document. Updated at the end of each phase by the Analyst / Docs role._  
+_Last updated: Week 1_
