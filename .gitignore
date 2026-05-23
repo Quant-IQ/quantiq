@@ -221,3 +221,6 @@ __marimo__/
 
 # Claude AI
 .claude/
+
+# Temp files
+temp/
