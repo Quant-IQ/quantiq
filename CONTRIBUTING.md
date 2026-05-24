@@ -341,3 +341,112 @@ git push origin your-branch
 | `git fetch origin` | Download remote changes without merging |
 | `git blame <file>` | See who last changed each line |
 | `git shortlog -sn` | Summary: who made how many commits |
+
+---
+
+## Reference Documentation
+
+Canonical docs for every tool, standard, and regulation used in QuantIQ. Read the relevant section before submitting PRs that touch those areas.
+
+---
+
+### Broker API
+
+| Resource | URL |
+| --- | --- |
+| DhanHQ API Docs v2 (primary) | <https://dhanhq.co/docs/v2/> |
+| DhanHQ Orders & Rate Limits | <https://dhanhq.co/docs/v2/orders/> |
+| DhanHQ Market Quote / LTP | <https://dhanhq.co/docs/v2/market-quote/> |
+| DhanHQ Option Chain | <https://dhanhq.co/docs/v2/option-chain/> |
+| DhanHQ Python SDK (GitHub) | <https://github.com/dhan-oss/DhanHQ-py> |
+| DhanHQ SDK README | <https://github.com/dhan-oss/DhanHQ-py/blob/main/README.md> |
+| DhanHQ SDK Releases (breaking changes) | <https://github.com/dhan-oss/DhanHQ-py/releases> |
+| Dhan API Rate Limit FAQ | <https://dhan.co/support/platforms/dhanhq-api/how-many-orders-can-i-placed-using-dhan-api/> |
+| NSE Market Data Portal | <https://www.nseindia.com/market-data/live-equity-market> |
+
+> **Hard constraints:**
+>
+> * Access tokens expire every **24 hours** (SEBI mandate). Regenerate daily before 9:15 AM IST.
+> * Order rate limit: **≤10 orders/sec/exchange/client**. Exceeding this requires NSE algo registration.
+> * Pin SDK version: `dhanhq==2.1.x` in `requirements.txt`. Do not auto-upgrade — v2.2.0 contains breaking changes.
+
+---
+
+### Python Libraries
+
+| Library | Docs | GitHub | PyPI |
+| --- | --- | --- | --- |
+| pandas | <https://pandas.pydata.org/docs/> | <https://github.com/pandas-dev/pandas> | <https://pypi.org/project/pandas/> |
+| numpy | <https://numpy.org/doc/stable/> | <https://github.com/numpy/numpy> | <https://pypi.org/project/numpy/> |
+| yfinance | <https://ranaroussi.github.io/yfinance/> | <https://github.com/ranaroussi/yfinance> | <https://pypi.org/project/yfinance/> |
+| ta (indicators) | <https://technical-analysis-library-in-python.readthedocs.io/en/latest/> | <https://github.com/bukosabino/ta> | <https://pypi.org/project/ta/> |
+| vectorbt (backtesting) | <https://vectorbt.dev/> | <https://github.com/polakowo/vectorbt> | <https://pypi.org/project/vectorbt/> |
+| python-dotenv | <https://github.com/theskumar/python-dotenv> | <https://github.com/theskumar/python-dotenv> | <https://pypi.org/project/python-dotenv/> |
+| streamlit | <https://docs.streamlit.io/> | <https://github.com/streamlit/streamlit> | <https://pypi.org/project/streamlit/> |
+| plotly | <https://plotly.com/python/> | <https://github.com/plotly/plotly.py> | <https://pypi.org/project/plotly/> |
+
+> **Known issues contributors must read:**
+>
+> * `yfinance` + NSE: all tickers **must** be suffixed `.NS` (e.g. `RELIANCE.NS`). Unsuffixed tickers silently return US equities. See [issue #825](https://github.com/ranaroussi/yfinance/issues/825).
+> * `ta` library has **no built-in daily VWAP**. Implement manually: `(Volume * Typical_Price).cumsum() / Volume.cumsum()`.
+> * `vectorbt` open-source is `0.28.x` — pin `vectorbt==0.28.2`. Do NOT write `vectorbt>=1.0` (that is the paid VectorBT PRO product).
+> * Python version: pin `>=3.11,<3.13` for stable Numba/vectorbt wheel compatibility.
+
+---
+
+### Code Style & Standards
+
+| Standard | URL |
+| --- | --- |
+| PEP 8 — Style Guide | <https://peps.python.org/pep-0008/> |
+| PEP 257 — Docstring Conventions | <https://peps.python.org/pep-0257/> |
+| PEP 484 — Type Hints | <https://peps.python.org/pep-0484/> |
+| Google Python Style Guide (docstrings) | <https://google.github.io/styleguide/pyguide.html> |
+| Python `logging` module | <https://docs.python.org/3/library/logging.html> |
+| Logging HOWTO | <https://docs.python.org/3/howto/logging.html> |
+
+> QuantIQ uses Google-style docstrings (`Args:`, `Returns:`, `Raises:`). See §3.8 of the Google Style Guide.
+
+---
+
+### Version Control & Git
+
+| Resource | URL |
+| --- | --- |
+| Conventional Commits v1.0.0 | <https://www.conventionalcommits.org/en/v1.0.0/> |
+| Semantic Versioning | <https://semver.org/> |
+| Git Official Docs | <https://git-scm.com/doc> |
+| Pro Git Book (free) | <https://git-scm.com/book/en/v2> |
+| GitHub Docs | <https://docs.github.com/> |
+| GitHub Actions | <https://docs.github.com/en/actions> |
+| GitHub Branch Protection | <https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches> |
+| Learn Git Branching (interactive) | <https://learngitbranching.js.org/> |
+
+---
+
+### Regulatory Reference (India)
+
+> **All contributors must read the Feb 2025 SEBI circular before working on the Phase 4 trading bot.**
+
+| Document | URL | Date |
+| --- | --- | --- |
+| SEBI: Safer Participation of Retail Investors in Algo Trading | <https://www.sebi.gov.in/legal/circulars/feb-2025/safer-participation-of-retail-investors-in-algorithmic-trading_91614.html> | 4 Feb 2025 |
+| SEBI: Extension of implementation timeline | <https://www.sebi.gov.in/legal/circulars/sep-2025/extension-of-timeline-for-implementation-of-sebi-circular-dated-february-04-2025-on-safer-participation-of-retail-investors-in-algorithmic-trading-_96979.html> | Sep 2025 |
+| SEBI: Discussion Paper (precursor) | <https://www.sebi.gov.in/reports-and-statistics/reports/dec-2024/participation-of-retail-investors-in-algorithmic-trading_89837.html> | Dec 2024 |
+| SEBI Circular Index (algo trading) | <https://www.sebi.gov.in/sebiweb/home/HomeAction.do?doListingAll=yes&search=Algorithmic> | Live |
+| NSE Exchange Circulars | <https://www.nseindia.com/resources/exchange-communication-circulars#href-0> | Live |
+
+---
+
+### Learning Resources
+
+| Resource | URL |
+| --- | --- |
+| Zerodha Varsity (all modules) | <https://zerodha.com/varsity/modules/> |
+| Varsity — Technical Analysis | <https://zerodha.com/varsity/module/technical-analysis/> |
+| CS50P — Harvard Python (free) | <https://cs50.harvard.edu/python/> |
+| QuantInsti Blog | <https://blog.quantinsti.com/> |
+| Real Python — REST APIs | <https://realpython.com/api-integration-in-python/> |
+| Investopedia — Technical Analysis | <https://www.investopedia.com/technical-analysis-4689657> |
+| freeCodeCamp Git Crash Course | <https://www.youtube.com/watch?v=mAFoROnOfHs> |
+| Google Technical Writing One | <https://developers.google.com/tech-writing/one> |

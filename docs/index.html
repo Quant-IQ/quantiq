@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantIQ — Algorithmic Trading System</title>
+<meta name="description" content="12-week collaborative algorithmic trading system targeting NSE Indian equity market.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0D1117;
+    --surface:  #161B22;
+    --surface2: #21262D;
+    --border:   #30363D;
+    --green:    #3FB950;
+    --green-dim:#2a7a36;
+    --blue:     #58A6FF;
+    --orange:   #F0883E;
+    --purple:   #BC8CFF;
+    --pink:     #FF7B9C;
+    --yellow:   #F0C040;
+    --text:     #E6EDF3;
+    --muted:    #8B949E;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Grid background ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 1px 1px, #21262D 1px, transparent 0);
+    background-size: 36px 36px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Top accent bar ── */
+  .top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--green);
+    z-index: 100;
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: fixed;
+    top: 3px; left: 0; right: 0;
+    height: 56px;
+    background: rgba(13,17,23,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    z-index: 99;
+  }
+
+  .nav-brand {
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .nav-brand span { color: var(--green); }
+
+  .nav-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── Main layout ── */
+  main {
+    position: relative;
+    z-index: 1;
+    padding-top: 59px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 40px 60px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 28px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.1s;
+  }
+
+  .hero-title {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(40px, 7vw, 80px);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.2s;
+  }
+
+  .hero-title .iq { color: var(--green); }
+
+  .hero-tagline {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(11px, 1.5vw, 14px);
+    color: var(--muted);
+    letter-spacing: 4px;
+    margin-bottom: 36px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.3s;
+  }
+
+  .hero-desc {
+    font-size: 18px;
+    color: var(--muted);
+    max-width: 520px;
+    line-height: 1.7;
+    margin-bottom: 52px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.4s;
+  }
+
+  .hero-desc strong { color: var(--text); font-weight: 500; }
+
+  /* ── Buttons ── */
+  .btn-group {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.5s;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 24px;
+    border-radius: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.18s;
+  }
+
+  .btn:hover::before { opacity: 0.07; }
+
+  .btn-primary {
+    background: var(--green);
+    color: #0D1117;
+    border-color: var(--green);
+  }
+  .btn-primary:hover {
+    background: #4dcf62;
+    border-color: #4dcf62;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(63,185,80,0.3);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .btn-ghost:hover {
+    border-color: var(--muted);
+    transform: translateY(-1px);
+  }
+
+  .btn-disabled {
+    background: var(--surface);
+    color: var(--muted);
+    border-color: var(--border);
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .btn-disabled:hover { transform: none; }
+  .btn-disabled::before { display: none; }
+
+  .btn-icon {
+    width: 16px; height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── Divider ── */
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0 40px;
+    opacity: 0;
+    animation: fadeIn 0.8s ease forwards 0.7s;
+  }
+
+  /* ── Stats strip ── */
+  .stats {
+    display: flex;
+    gap: 0;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 40px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.8s;
+  }
+
+  .stat {
+    flex: 1;
+    padding: 0 32px 0 0;
+    border-right: 1px solid var(--border);
+  }
+  .stat:first-child { padding-left: 0; }
+  .stat:last-child { border-right: none; padding-right: 0; padding-left: 32px; }
+  .stat:not(:first-child):not(:last-child) { padding-left: 32px; }
+
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ── Phase track ── */
+  .phases-section {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 40px 80px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 1s;
+  }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 24px;
+  }
+
+  .phase-track {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .phase-item {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 14px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .phase-item:hover { border-color: var(--muted); }
+
+  .phase-item::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .phase-0::before { background: var(--green); }
+  .phase-1::before { background: var(--blue); }
+  .phase-2::before { background: var(--orange); }
+  .phase-3::before { background: var(--purple); }
+  .phase-4::before { background: var(--pink); }
+
+  .phase-done::after {
+    content: '✓';
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 10px;
+    color: var(--green);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .phase-active {
+    border-color: var(--green);
+  }
+
+  .phase-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .phase-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 100%;
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards 1.2s;
+  }
+
+  .footer-brand {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .footer-brand span { color: var(--green); }
+
+  .footer-note {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.6;
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 640px) {
+    nav { padding: 0 20px; }
+    .hero { padding: 70px 20px 40px; }
+    .hero-title { letter-spacing: -1px; }
+    .stats { flex-direction: column; gap: 24px; padding: 40px 20px; }
+    .stat { border-right: none; border-bottom: 1px solid var(--border); padding: 0 0 24px; }
+    .stat:last-child { border-bottom: none; padding-bottom: 0; }
+    .stat:not(:first-child) { padding-left: 0; }
+    .phase-track { flex-direction: column; }
+    .section-divider { margin: 0 20px; }
+    .phases-section { padding: 0 20px 60px; }
+    footer { padding: 20px; flex-direction: column; gap: 8px; text-align: center; }
+    .btn-group { flex-direction: column; }
+    .btn { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar"></div>
+
+<nav>
+  <div class="nav-brand">Quant<span>IQ</span></div>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    In Progress — Week 2
+  </div>
+</nav>
+
+<main>
+  <section class="hero">
+    <div class="hero-eyebrow">NSE · India · Python · Dhan API</div>
+
+    <h1 class="hero-title">Quant<span class="iq">IQ</span></h1>
+
+    <div class="hero-tagline">Build.&nbsp;&nbsp;Backtest.&nbsp;&nbsp;Deploy.</div>
+
+    <p class="hero-desc">
+      A <strong>12-week collaborative</strong> algorithmic trading system targeting the Indian stock market.
+      Strategy design → backtesting → live paper trading via Dhan API.
+    </p>
+
+    <div class="btn-group">
+      <!-- GitHub: active -->
+      <a href="https://github.com/Quant-IQ/quantiq" target="_blank" rel="noopener" class="btn btn-primary">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        GitHub
+      </a>
+
+      <!-- Docs: disabled -->
+      <span class="btn btn-disabled">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        Docs
+      </span>
+
+      <!-- Dashboard: disabled -->
+      <span class="btn btn-disabled">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        Dashboard
+      </span>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value">12</div>
+      <div class="stat-label">Weeks</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">5</div>
+      <div class="stat-label">Phases</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">NSE</div>
+      <div class="stat-label">Target Market</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">Dhan</div>
+      <div class="stat-label">Broker API</div>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  <section class="phases-section" style="padding-top: 48px;">
+    <div class="section-label">Project Phases</div>
+    <div class="phase-track">
+      <div class="phase-item phase-0 phase-done">
+        <div class="phase-num">Phase 0</div>
+        <div class="phase-name">Onboarding</div>
+      </div>
+      <div class="phase-item phase-1 phase-active">
+        <div class="phase-num">Phase 1</div>
+        <div class="phase-name">Foundations</div>
+      </div>
+      <div class="phase-item phase-2">
+        <div class="phase-num">Phase 2</div>
+        <div class="phase-name">Data & Analysis</div>
+      </div>
+      <div class="phase-item phase-3">
+        <div class="phase-num">Phase 3</div>
+        <div class="phase-name">Backtesting</div>
+      </div>
+      <div class="phase-item phase-4">
+        <div class="phase-num">Phase 4</div>
+        <div class="phase-name">Paper Trading</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="footer-brand">Quant<span>IQ</span> · quant-iq.net</div>
+  <div class="footer-note">Paper trading only · NSE Indian equity market</div>
+</footer>
+
+</body>
+</html>

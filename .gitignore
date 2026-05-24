@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Claude AI
+.claude/
+
+# Temp files
+temp/

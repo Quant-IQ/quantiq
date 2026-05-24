@@ -153,7 +153,7 @@ DHAN_ACCESS_TOKEN=your_access_token_here
 
 **Never hardcode credentials. Never commit `.env`. Always load via `os.getenv()` or `python-dotenv`.**
 
-Dhan access tokens expire every 30 days and must be manually refreshed from the Dhan profile page.
+Dhan access tokens expire every **24 hours** (SEBI hard cap) and must be manually regenerated from the Dhan profile page daily.
 
 ---
 
@@ -194,16 +194,24 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def fetch_ltp(ticker: str) -> float | None:
-    """Fetch last traded price from Dhan API. Returns None on failure."""
+def fetch_ltp(security_id: int) -> float | None:
+    """Fetch last traded price from Dhan API. Returns None on failure.
+
+    Args:
+        security_id (int): Integer security ID (e.g. 1333 for HDFC Bank NSE_EQ).
+                           Find IDs via dhan.fetch_security_list("compact").
+
+    Returns:
+        float | None: Last traded price, or None on API failure.
+    """
     try:
-        response = dhan.get_ltp_data([ticker])
-        return response["data"]["ltp"]
+        response = dhan.quote_data({"NSE_EQ": [security_id]})
+        return response["data"]["NSE_EQ"][str(security_id)]["last_price"]
     except KeyError as e:
-        logger.error("Unexpected response structure for %s: %s", ticker, e)
+        logger.error("Unexpected response structure for security_id %s: %s", security_id, e)
         return None
     except Exception as e:
-        logger.error("Dhan API call failed for %s: %s", ticker, e)
+        logger.error("Dhan API call failed for security_id %s: %s", security_id, e)
         return None
 ```
 
@@ -425,22 +433,29 @@ Labels in use: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-
 
 ## 8. Team Structure
 
-| Handle | Role             | Role Colour | Owns                                                |
-| ------ | ---------------- | ----------- | --------------------------------------------------- |
-| RS     | Project Lead     | `#F0C040`   | Repo, Discord, AppFlowy, decisions, unblocking      |
-| EB     | Analyst / Docs   | `#FF7B9C`   | README, AppFlowy log, Streamlit dashboard           |
-| GT     | Quant / Strategy | `#F0883E`   | Strategy design, backtesting, indicator research    |
-| AV     | Data Engineer    | `#BC8CFF`   | Data pipelines, indicator functions, backtest feeds |
-| AR     | Dev / Infra      | `#58A6FF`   | Bot engine, Dhan API, execution loop                |
-| RT     | Quant / Strategy | `#F0883E`   | Strategy design, backtesting, indicator research    |
-| NS     | Analyst / Docs   | `#FF7B9C`   | Support — Phase 0 incomplete (catch-up pending)     |
-| AJ     | Data Engineer    | `#BC8CFF`   | Support — Phase 0 incomplete (catch-up pending)     |
-| AD     | Dev / Infra      | `#58A6FF`   | Support — Phase 0 incomplete (catch-up pending)     |
+Roles assigned for Phase 1 on **17 May 2026**. Will be reviewed again at end of Phase 1 or start of Phase 2 based on actual performance. Roles marked (P) primary, (S) secondary.
 
-**Team size:** 9 confirmed. One member withdrew before Phase 1. No replacement planned.
+| Handle | Role (P / S) — Phase 1 | Role Colour | Owns |
+| --- | --- | --- | --- |
+| RS | Project Lead / All | `#F0C040` | Repo, Discord, AppFlowy, decisions, unblocking |
+| EB | Analyst / Docs (P) / Dev / Infra (S) | `#FF7B9C` | README, AppFlowy log, Streamlit dashboard |
+| GT | Quant / Strategy (P) / Analyst / Docs (S) | `#F0883E` | Strategy design, backtesting, indicator research |
+| AV | Quant / Strategy (P) / Data Engineering (S) | `#F0883E` | Strategy support, indicator work |
+| AR | Data Engineering (P) / Dev / Infra (S) | `#BC8CFF` | Data pipelines, indicator work, data validation |
+| RT | Quant / Strategy (P) / Dev / Infra (S) | `#F0883E` | Strategy design, backtesting, indicator research |
+| NS | Dev / Infra (P) / Data Engineering (S) | `#58A6FF` | Dev / Infra support, data pipeline — introduced at 17 May sync |
+| AJ | Data Engineering (P) / Quant / Strategy (S) | `#BC8CFF` | Data pipelines, indicator work, strategy research support |
+| SS | Quant / Strategy (P) / Analyst / Docs (S) | `#F0883E` | Strategy research, documentation support |
+| SmS | Data Engineering (P) / Analyst / Docs (S) | `#BC8CFF` | Data pipeline support, AppFlowy log, README |
+| AK | Dev / Infra (P) / Data Engineering (S) | `#58A6FF` | Bot engine support, data pipeline |
+| ShS | Analyst / Docs (P) / Dev / Infra (S) | `#FF7B9C` | README, AppFlowy log, dev support |
+| HG | Analyst / Docs (P) / Quant / Strategy (S) | `#FF7B9C` | New member — Phase 0 pending (RS overseeing) |
+
+**Team size:** 13 confirmed members (12 Phase 0 complete, 1 pending). AD departed before Phase 1. Roles reviewed again at end of Phase 1 / start of Phase 2. Target: 12–14 active members, natural attrition expected to stabilise at 8–12 by Phase 4.
+
+**Co-Lead role:** Vacant. To be assigned end of Phase 1 or Phase 2 as team scales. Sub-team structure planned for 14+ members: Project Lead → Co-Lead (Quant / Strategy + Data Engineering) + Co-Lead (Dev / Infra + Analyst / Docs).
 
 **Attrition rule:** Two consecutive missed standups with no explanation = voluntary exit.
-NS, AJ, AD are on the watch list — reliability unproven.
 
 ---
 
@@ -502,7 +517,10 @@ This email is for AppFlowy Cloud login and shared project comms only — it does
 | 10  | CS50P over paid Udemy courses         | Free, equivalent quality, no cost barrier for team       |
 | 11  | Paper trade only until team consensus | Never touch real capital without full team agreement     |
 | 12  | RT assigned Quant / Strategy          | Co-assigned with GT for strategy and backtesting         |
-| 13  | EB assigned Analyst / Docs            | Owns README, AppFlowy log, and Streamlit dashboard       |
+| 13  | EB primary Docs, secondary Data       | Owns README, AppFlowy log, Streamlit dashboard           |
+| 14  | Co-Lead vacant — end of Phase 1 or 2  | Roles and strengths being established; team scaling      |
+| 15  | Dual-role model (P/S) for all members | Primary = ownership; secondary = support / cross-train   |
+| 16  | Second recruitment wave — up to 6 new | All who pass interview treated as full members           |
 
 ---
 
@@ -563,9 +581,17 @@ dhan = dhanhq(
 ### Fetch Live Quote (LTP)
 
 ```python
-# NSE equity — use security ID format
-response = dhan.get_ltp_data(["NSE_EQ|INE002A01018"])  # Reliance
+# NSE equity — use integer security ID (not ISIN string format)
+# Find security IDs via: dhan.fetch_security_list("compact")
+# 1333 = HDFC Bank, 11536 = Reliance Industries (NSE_EQ segment)
+response = dhan.quote_data({"NSE_EQ": [1333, 11536]})
 print(response)
+
+# For OHLC snapshot:
+response = dhan.ohlc_data({"NSE_EQ": [1333]})
+
+# For just the ticker (LTP only, lower payload):
+response = dhan.ticker_data({"NSE_EQ": [1333]})
 ```
 
 ### Place Paper Order (log only — do not execute in Phase 1–3)
@@ -606,7 +632,7 @@ instruments = [
 
 **API constraints:**
 
-- Access token expires every 30 days — must refresh manually from Dhan profile
+- Access token expires every **24 hours** (SEBI cap) — must regenerate daily from Dhan profile
 - Rate limit: 25 orders/second — always throttle
 - Paper trading = log signals to CSV only, do not call `place_order`
 - Never commit your access token — load from `.env` only
@@ -741,7 +767,7 @@ Check this order before recommending:
 - **Python SDK**: <https://github.com/dhan-oss/DhanHQ-py>
 - **API Docs**: <https://dhanhq.co/docs/v2/>
 - **Rate limit**: 25 orders/second
-- **Token refresh**: Every 30 days — manual, from Dhan profile
+- **Token refresh**: Every **24 hours** (SEBI hard cap) — manual, from Dhan profile
 - **Paper trading**: Supported natively — use `dhan.place_order()` with `paper_trade=True` in Phase 4
 
 ## 19. External Resources (Pinned)
@@ -763,3 +789,246 @@ Check this order before recommending:
 
 *Last updated: Week 1, Phase 0. Update this file whenever architecture, team, or decisions change.*
 *Owner: RS (Project Lead). Changes via PR — do not edit directly on main.*
+
+---
+
+## 20. External Documentation & Constraints
+
+This section is the authoritative reference for Claude Code. When generating code for QuantIQ, always consult the relevant docs below before producing any implementation. Constraints listed here are non-negotiable.
+
+---
+
+### 20.1 Broker Integration — DhanHQ
+
+- **SDK:** `dhanhq==2.1.x` (pin exactly). v2.2.0 has breaking import changes — do not upgrade without checking <https://github.com/dhan-oss/DhanHQ-py/releases>
+- **API Docs v2:** <https://dhanhq.co/docs/v2/>
+- **Orders reference:** <https://dhanhq.co/docs/v2/orders/>
+- **Market Quote / LTP:** <https://dhanhq.co/docs/v2/market-quote/>
+- **Option Chain:** <https://dhanhq.co/docs/v2/option-chain/>
+- **SDK GitHub:** <https://github.com/dhan-oss/DhanHQ-py>
+- **SDK README:** <https://github.com/dhan-oss/DhanHQ-py/blob/main/README.md>
+
+**Hard constraints — never violate:**
+
+1. Access tokens are valid for **24 hours only** (SEBI mandate). The bot must regenerate the token daily before 9:15 AM IST market open. Never document or assume 30-day or permanent token validity.
+2. Order rate limit: **≤10 orders/second/exchange/client**. Never generate code that exceeds this without explicit rate-limiting.
+3. All order placement must log: timestamp, symbol, order type, quantity, price, order ID, response status.
+4. Static-IP whitelisting is mandatory (SEBI Feb 2025 circular). Use `DhanLogin.set_ip()` / `modify_ip()` / `get_ip()` from the SDK.
+5. DhanHQ has **no documented paper-trading sandbox**. Never generate code that assumes a sandbox endpoint exists. Use vectorbt `Portfolio.from_signals()` for paper simulation.
+6. Security IDs are **integers** (e.g. `1333` = HDFC Bank NSE_EQ). Never use ISIN strings with `quote_data` / `ohlc_data` / `ticker_data`. Find IDs via `dhan.fetch_security_list("compact")`.
+
+**Confirmed SDK methods (dhanhq v2.x):**
+
+```python
+# Market data — integer security IDs required
+dhan.quote_data({"NSE_EQ": [1333, 11536]})          # real-time snapshot
+dhan.ohlc_data({"NSE_EQ": [1333]})                   # OHLC quote
+dhan.ticker_data({"NSE_EQ": [1333]})                 # LTP only (lower payload)
+dhan.intraday_minute_data(security_id, exchange_segment, instrument_type)
+dhan.historical_daily_data(security_id, exchange_segment, instrument_type, expiry_code, from_date, to_date)
+
+# Security master — find integer IDs
+dhan.fetch_security_list("compact")
+
+# Orders (Phase 4 only)
+dhan.place_order(...)
+dhan.modify_order(order_id, ...)
+dhan.cancel_order(order_id)
+
+# Portfolio
+dhan.get_positions()
+dhan.get_holdings()
+dhan.get_fund_limits()
+dhan.get_order_list()
+```
+
+---
+
+### 20.2 Market Data — yfinance
+
+- **Docs:** <https://ranaroussi.github.io/yfinance/>
+- **API reference:** <https://ranaroussi.github.io/yfinance/reference/index.html>
+- **GitHub:** <https://github.com/ranaroussi/yfinance>
+- **NSE ticker issue:** <https://github.com/ranaroussi/yfinance/issues/825>
+
+**Hard constraints:**
+
+1. All NSE tickers must be suffixed `.NS` (e.g. `RELIANCE.NS`, `INFY.NS`). BSE tickers use `.BO`. Never fetch an unsuffixed Indian ticker — it silently returns US equity data.
+2. Always validate ticker suffix at the data-layer entry point before passing to yfinance.
+
+**Correct usage:**
+
+```python
+# download() — multiple tickers
+yf.download(
+    tickers="RELIANCE.NS TCS.NS",  # space-separated string or list
+    period="1y",                    # 1d 5d 1mo 3mo 6mo 1y 2y 5y 10y ytd max
+    interval="1d",                  # 1m 2m 5m 15m 30m 60m 90m 1h 1d 5d 1wk 1mo 3mo
+    auto_adjust=True,               # adjusts OHLC for splits/dividends
+)
+
+# Ticker.history() — single ticker
+ticker = yf.Ticker("RELIANCE.NS")
+df = ticker.history(period="1y", interval="1d")
+# Columns: Open, High, Low, Close, Volume, Dividends, Stock Splits
+```
+
+Intraday intervals available for last 60 days only. yfinance is unofficial — Yahoo ToS limits commercial use.
+
+---
+
+### 20.3 Technical Indicators — `ta` library
+
+- **Docs:** <https://technical-analysis-library-in-python.readthedocs.io/en/latest/>
+- **API reference:** <https://technical-analysis-library-in-python.readthedocs.io/en/latest/ta.html>
+- **GitHub:** <https://github.com/bukosabino/ta>
+
+**Hard constraint:** `ta` does NOT include a daily VWAP. When VWAP is required, implement manually:
+
+```python
+# VWAP — manual implementation, do NOT rely on ta.volume.VolumeWeightedAveragePrice for daily VWAP
+typical_price = (df["High"] + df["Low"] + df["Close"]) / 3
+df["VWAP"] = (typical_price * df["Volume"]).cumsum() / df["Volume"].cumsum()
+```
+
+**Correct indicator usage:**
+
+```python
+from ta.trend import SMAIndicator, EMAIndicator, MACD
+from ta.momentum import RSIIndicator
+from ta.volatility import AverageTrueRange, BollingerBands
+
+df["SMA20"] = SMAIndicator(close=df["Close"], window=20).sma_indicator()
+df["EMA20"] = EMAIndicator(close=df["Close"], window=20).ema_indicator()
+df["RSI"]   = RSIIndicator(close=df["Close"], window=14).rsi()
+
+macd = MACD(close=df["Close"], window_slow=26, window_fast=12, window_sign=9)
+df["MACD"]        = macd.macd()
+df["MACD_signal"] = macd.macd_signal()
+df["MACD_diff"]   = macd.macd_diff()
+
+df["ATR"] = AverageTrueRange(
+    high=df["High"], low=df["Low"], close=df["Close"], window=14
+).average_true_range()
+
+bb = BollingerBands(close=df["Close"], window=20, window_dev=2)
+df["BB_upper"] = bb.bollinger_hband()
+df["BB_mid"]   = bb.bollinger_mavg()
+df["BB_lower"] = bb.bollinger_lband()
+
+df.dropna(inplace=True)  # always after rolling ops, before backtest
+```
+
+---
+
+### 20.4 Backtesting — vectorbt
+
+- **Docs:** <https://vectorbt.dev/>
+- **GitHub:** <https://github.com/polakowo/vectorbt>
+- **Python compat issue:** <https://github.com/polakowo/vectorbt/issues/807>
+
+**Hard constraints:**
+
+1. Use **open-source vectorbt only** — pin `vectorbt==0.28.2`. Do NOT write `vectorbt>=1.0` — v1.x is the paid VectorBT PRO product and will fail to install on the free tier.
+2. Python compatibility: `>=3.11,<3.13`. Do not generate code or CI configs targeting Python 3.13+ until Numba wheel availability is confirmed.
+
+**Correct usage:**
+
+```python
+import vectorbt as vbt
+
+pf = vbt.Portfolio.from_signals(
+    close=df["Close"],
+    entries=entries,    # pd.Series of bool — True = buy
+    exits=exits,        # pd.Series of bool — True = sell
+    init_cash=100_000,
+    fees=0.001,         # 0.1% per trade (slippage + brokerage)
+    freq="1D",
+)
+
+print(pf.total_return())     # cumulative return
+print(pf.sharpe_ratio())     # risk-adjusted return (target > 1.0)
+print(pf.max_drawdown())     # largest peak-to-trough (target < 20%)
+print(pf.trades.win_rate())  # % profitable trades (target > 50%)
+print(pf.stats())            # full summary table
+```
+
+---
+
+### 20.5 Dashboard — Streamlit
+
+- **Docs:** <https://docs.streamlit.io/>
+- **API reference:** <https://docs.streamlit.io/develop/api-reference>
+- **Secrets management:** <https://docs.streamlit.io/develop/concepts/connections/secrets-management>
+
+**Hard constraints:**
+
+1. Store `DHAN_CLIENT_ID` and `DHAN_ACCESS_TOKEN` in `.streamlit/secrets.toml` locally. Never hardcode credentials.
+2. `.streamlit/secrets.toml` must be in `.gitignore`. Never commit it.
+3. For Streamlit Community Cloud deployment, credentials are pasted into "Advanced settings → Secrets" — never stored in the repo.
+
+---
+
+### 20.6 Charting — Plotly
+
+- **Docs:** <https://plotly.com/python/>
+- **API reference:** <https://plotly.com/python-api-reference/>
+- **Figure reference:** <https://plotly.com/python/reference/>
+
+Always use Plotly over matplotlib. Interactive charts are a project requirement.
+
+---
+
+### 20.7 Data Manipulation
+
+| Library | Docs | Quickstart |
+| --- | --- | --- |
+| pandas | <https://pandas.pydata.org/docs/> | <https://pandas.pydata.org/docs/user_guide/10min.html> |
+| numpy | <https://numpy.org/doc/stable/> | <https://numpy.org/doc/stable/user/quickstart.html> |
+
+---
+
+### 20.8 Environment Variables — python-dotenv
+
+- **GitHub / Docs:** <https://github.com/theskumar/python-dotenv>
+- **Version:** `python-dotenv==1.2.2`, requires Python `>=3.10`
+
+**Hard constraint:** Never generate code that reads API credentials directly from environment without `load_dotenv()` or Streamlit secrets.
+
+---
+
+### 20.9 Code Style
+
+Always generate code conforming to:
+
+- **PEP 8:** <https://peps.python.org/pep-0008/>
+- **PEP 257:** <https://peps.python.org/pep-0257/>
+- **PEP 484 (type hints):** <https://peps.python.org/pep-0484/>
+- **Google Python Style Guide (docstrings):** <https://google.github.io/styleguide/pyguide.html>
+
+Use Google-style docstrings exclusively (`Args:`, `Returns:`, `Raises:`).
+
+---
+
+### 20.10 Regulatory Compliance (India)
+
+- **SEBI Master Circular (Feb 2025):** <https://www.sebi.gov.in/legal/circulars/feb-2025/safer-participation-of-retail-investors-in-algorithmic-trading_91614.html>
+- **SEBI Extension (Sep 2025):** <https://www.sebi.gov.in/legal/circulars/sep-2025/extension-of-timeline-for-implementation-of-sebi-circular-dated-february-04-2025-on-safer-participation-of-retail-investors-in-algorithmic-trading-_96979.html>
+- **SEBI Circular Index:** <https://www.sebi.gov.in/sebiweb/home/HomeAction.do?doListingAll=yes&search=Algorithmic>
+
+**Hard constraints for Phase 4 bot:**
+
+1. Order rate: ≤10 orders/sec. Never generate a loop that can exceed this.
+2. Daily session logout must be implemented — no persistent session across trading days.
+3. All algo activity must be audit-logged with ≥5-year retention capability (file rotation acceptable; use Python `logging` with `TimedRotatingFileHandler`).
+4. Static-IP whitelisting must be set via DhanHQ SDK before any live order is placed.
+
+---
+
+### 20.11 Version Control
+
+- **Conventional Commits:** <https://www.conventionalcommits.org/en/v1.0.0/>
+- **Semantic Versioning:** <https://semver.org/>
+
+When generating commit messages, branch names, or PR templates, always follow Conventional Commits format:
+`<type>(<scope>): <description>` — e.g. `feat(data): add NSE ticker validator`
