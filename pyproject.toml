@@ -1,10 +1,16 @@
+[project]
+name = "quantiq"
+version = "0.1.0"
+description = "QuantIQ — NSE Algorithmic Trading"
+requires-python = ">=3.11,<3.13"
+
 [tool.ruff]
 line-length = 88
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]   # pycodestyle errors, pyflakes, isort
-ignore = ["E501"]           # line-too-long handled by formatter
+select = ["E", "F", "I", "N", "UP", "B"]   # style, pyflakes, isort, naming, upgrades, bugbear
+ignore = ["E501"]                            # line-too-long handled by formatter
 
 [tool.ruff.format]
 quote-style = "double"

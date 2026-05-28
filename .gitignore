@@ -233,3 +233,6 @@ cache/*
 !cache/.gitkeep
 *.pkl
 *.csv
+
+# History files
+.history
