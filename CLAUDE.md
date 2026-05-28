@@ -59,6 +59,8 @@ quantiq/
 │   │   └── logger.py               # Trade signal logging to logs/trades.csv
 │   └── dashboard/                   # Streamlit UI
 │       └── app.py                   # Live price + current signal + trade log view
+├── scripts/                         # Phase 1 individual analysis scripts + general utilities
+│   └── <handle>.py                  # One file per member — fetch NSE data, print stats
 ├── backtest/
 │   └── strategy_v1.ipynb            # vectorbt backtest — SMA crossover on NIFTY 1yr
 ├── notebooks/
@@ -71,8 +73,9 @@ quantiq/
     └── architecture.md              # Plain-English system architecture explanation
 ```
 
-**All `src/` directories are scaffolded with `.gitkeep` files. Implementation begins Phase 1.**
-**All src/ files listed above are planned targets, not current files**
+**All `src/` directories are scaffolded with `.gitkeep` files. `src/` implementation begins Phase 3.**
+**All `src/` files listed above are planned targets, not current files.**
+**Phase 1 work goes in `scripts/` — see §7. `scripts/` may be cleaned up before the repo goes public (Phase 5).**
 Do not add files outside this structure without discussing with the Project Lead (RS).
 
 ---
@@ -102,7 +105,7 @@ Do not add files outside this structure without discussing with the Project Lead
 | `jupyter` | Notebooks for analysis and backtest      |
 | `pytest`  | Unit tests (add as project matures)      |
 | `black`   | Code formatter — run before every commit |
-| `flake8`  | Linter                                   |
+| `ruff`    | Linter + import sorter (replaces flake8) |
 
 ### Tool Philosophy — FOSS First
 
@@ -258,16 +261,17 @@ yf.download("RELIANCE", ...)
 
 ### Dhan API Ticker Format
 
-Dhan uses a different format — security ID + exchange segment:
+Dhan uses **integer security IDs**, not ISIN strings:
 
 ```python
-# Dhan format for Reliance equity
-"NSE_EQ|INE002A01018"
+# Correct — integer security IDs
+dhan.quote_data({"NSE_EQ": [11536, 1333]})   # Reliance, HDFC Bank
 
-# Dhan format for Nifty50 futures
-"NSE_FNO|NIFTY"
+# DO NOT USE — ISIN strings silently fail in v2
+dhan.quote_data({"NSE_EQ": ["INE002A01018"]})  # WRONG
 ```
 
+Find integer IDs via `dhan.fetch_security_list("compact")`.
 Maintain a `src/data/ticker_map.py` mapping common names to both yfinance and Dhan formats.
 
 ### pandas — Key Patterns
@@ -298,12 +302,12 @@ above_sma = df[df["Close"] > df["SMA20"]]
 
 ### Rate Limiting — Dhan API
 
-Dhan allows **25 orders/second**. Track and throttle:
+10 orders/sec per exchange per client (SEBI/NSE mandate — hard cap). Track and throttle:
 
 ```python
 import time
 
-MAX_ORDERS_PER_SEC = 20  # Stay under 25 limit with margin
+MAX_ORDERS_PER_SEC = 8  # Stay well under 10/sec SEBI hard limit
 _order_timestamps: list[float] = []
 
 def rate_limited_order(order_params: dict) -> dict:
@@ -333,17 +337,22 @@ members/your-name                # Phase 0 onboarding commit
 
 ### Commit Format
 
-```text
-type: short description (max 72 chars)
+Follows [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/).
 
-Types: feat | fix | data | docs | test | refactor | chore
+```text
+type(scope): short description (max 72 chars, lowercase)
+
+Types:  feat | fix | docs | style | refactor | test | build | chore
+Scopes: data | broker | strategy | backtest | dashboard | bot
+
+# Omit scope only for repo-wide changes (e.g. docs: update README)
 
 Examples:
-feat: add RSI indicator to data pipeline
-fix: handle NaN values in SMA crossover signal
-data: add NIFTY50 constituent ticker map
+feat(data): add RSI indicator to data pipeline
+fix(strategy): handle NaN values in SMA crossover signal
+feat(broker): add daily token refresh scheduler
 docs: update README with backtest results
-refactor: extract order logging to separate module
+refactor(data): extract order logging to separate module
 chore: pin dependency versions in requirements.txt
 ```
 
@@ -378,7 +387,7 @@ Labels in use: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-
 | Phase | Weeks | Core Deliverable                                           | Status      |
 | ----- | ----- | ---------------------------------------------------------- | ----------- |
 | 0     | 1     | Every member: first commit (`members/name.md`)             | Complete    |
-| 1     | 2–4   | Individual analysis scripts — fetch NSE data, print stats  | Active      |
+| 1     | 2–4   | `scripts/<handle>.py` — fetch NSE data, SMA20/50 stats     | Active      |
 | 2     | 5–7   | `notebooks/market_analysis.ipynb` — group NIFTY50 analysis | Not started |
 | 3     | 8–9   | `backtest/strategy_v1.ipynb` — Sharpe, drawdown, win rate  | Not started |
 | 4     | 10–11 | Live bot — paper trading across 3+ sessions via Dhan API   | Not started |
@@ -449,9 +458,8 @@ Roles assigned for Phase 1 on **17 May 2026**. Will be reviewed again at end of 
 | SmS | Data Engineering (P) / Analyst / Docs (S) | `#BC8CFF` | Data pipeline support, AppFlowy log, README |
 | AK | Dev / Infra (P) / Data Engineering (S) | `#58A6FF` | Bot engine support, data pipeline |
 | ShS | Analyst / Docs (P) / Dev / Infra (S) | `#FF7B9C` | README, AppFlowy log, dev support |
-| HG | Analyst / Docs (P) / Quant / Strategy (S) | `#FF7B9C` | New member — Phase 0 pending (RS overseeing) |
 
-**Team size:** 13 confirmed members (12 Phase 0 complete, 1 pending). AD departed before Phase 1. Roles reviewed again at end of Phase 1 / start of Phase 2. Target: 12–14 active members, natural attrition expected to stabilise at 8–12 by Phase 4.
+**Team size:** 12 active members. AD departed before Phase 1. HG departed Week 2 Phase 1. Roles reviewed end of Phase 1 / start of Phase 2. Target: 12–14 active members, natural attrition expected to stabilise at 8–12 by Phase 4.
 
 **Co-Lead role:** Vacant. To be assigned end of Phase 1 or Phase 2 as team scales. Sub-team structure planned for 14+ members: Project Lead → Co-Lead (Quant / Strategy + Data Engineering) + Co-Lead (Dev / Infra + Analyst / Docs).
 
@@ -566,13 +574,13 @@ Backtest on:   1 year of NIFTY data (vectorbt)
 ### Authentication
 
 ```python
-from dhanhq import dhanhq
+from dhanhq.dhanhq import dhanhq as DhanHQ
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-dhan = dhanhq(
+dhan = DhanHQ(
     client_id=os.getenv("DHAN_CLIENT_ID"),
     access_token=os.getenv("DHAN_ACCESS_TOKEN"),
 )
@@ -633,8 +641,8 @@ instruments = [
 **API constraints:**
 
 - Access token expires every **24 hours** (SEBI cap) — must regenerate daily from Dhan profile
-- Rate limit: 25 orders/second — always throttle
-- Paper trading = log signals to CSV only, do not call `place_order`
+- Rate limit: 10 orders/second (SEBI/NSE hard cap) — always throttle, never exceed
+- No paper-trading sandbox — log signals to CSV only; use vectorbt for simulation
 - Never commit your access token — load from `.env` only
 
 ---
@@ -650,6 +658,12 @@ These are absolute. No exceptions regardless of context.
 4. **`.env.example` only** — this file has placeholder values, never real credentials
 5. **Logs are gitignored** — `logs/*.csv` must never be committed (may contain price data + signal patterns)
 6. **No team member shares their Dhan token** — every member generates their own from their Dhan account
+7. **Static IP whitelisting mandatory** (SEBI Feb 2025) — set via `DhanLogin.set_ip()` before any live
+   order. 7-day cooldown after setting; cannot modify within that window.
+8. **OAuth + TOTP 2FA mandatory** — all other auth methods discontinued per SEBI Feb 2025 circular.
+   Use TOTP or OAuth flow (see §12 Authentication). Never generate code that bypasses 2FA.
+9. **Daily session logout required** — no persistent sessions across trading days. Bot must log out
+   after market close (15:30 IST) and re-authenticate before 09:15 IST next session.
 
 ---
 
@@ -722,6 +736,7 @@ These rules apply to every interaction in this codebase. Read them before genera
 - Run `pip freeze > requirements.txt` after adding any new package
 - Follow the branch naming convention when creating branches
 - Reference `Closes #N` in commit/PR messages when resolving Issues
+- Use `TimedRotatingFileHandler` with `backupCount=1825` for all audit logs (SEBI 5-year retention)
 
 ### Never
 
@@ -734,8 +749,16 @@ These rules apply to every interaction in this codebase. Read them before genera
 - Use `print()` in `src/` — use `logging`
 - Call `dhan.place_order()` in Phases 1–3 — log signals only
 - Recommend a paid tool when a free equivalent exists and is fit for purpose
+- Generate code that can exceed 10 orders/sec — always rate-limit with `MAX_ORDERS_PER_SEC = 8`
+- Assume `paper_trade=True` sandbox exists in Dhan SDK — no sandbox documented; use vectorbt
 
 ### When Generating New Modules
+
+**Phase 1 scripts go in `scripts/<handle>.py` — not in `src/`.** Lower bar applies:
+no mandatory docstrings or type hints, no `if __name__ == "__main__"` required.
+Still required: `.NS` suffix on NSE tickers, no hardcoded credentials, `logging` not `print()`.
+
+For `src/` modules (Phase 3+):
 
 1. Create the file under the correct `src/` subdirectory
 2. Add module-level docstring: what it does, who owns it, phase it becomes active
@@ -766,9 +789,9 @@ Check this order before recommending:
 
 - **Python SDK**: <https://github.com/dhan-oss/DhanHQ-py>
 - **API Docs**: <https://dhanhq.co/docs/v2/>
-- **Rate limit**: 25 orders/second
+- **Rate limit**: 10 orders/second (SEBI/NSE hard cap — never exceed)
 - **Token refresh**: Every **24 hours** (SEBI hard cap) — manual, from Dhan profile
-- **Paper trading**: Supported natively — use `dhan.place_order()` with `paper_trade=True` in Phase 4
+- **Paper trading**: No sandbox in Dhan SDK. Use vectorbt `Portfolio.from_signals()` for simulation.
 
 ## 19. External Resources (Pinned)
 
@@ -787,7 +810,7 @@ Check this order before recommending:
 
 ---
 
-*Last updated: Week 1, Phase 0. Update this file whenever architecture, team, or decisions change.*
+*Last updated: Week 2, Phase 1. Update this file whenever architecture, team, or decisions change.*
 *Owner: RS (Project Lead). Changes via PR — do not edit directly on main.*
 
 ---
@@ -800,7 +823,7 @@ This section is the authoritative reference for Claude Code. When generating cod
 
 ### 20.1 Broker Integration — DhanHQ
 
-- **SDK:** `dhanhq==2.1.x` (pin exactly). v2.2.0 has breaking import changes — do not upgrade without checking <https://github.com/dhan-oss/DhanHQ-py/releases>
+- **SDK:** `dhanhq==2.0.2` (pin exactly). v2.2.0 has breaking import changes — do not upgrade without checking <https://github.com/dhan-oss/DhanHQ-py/releases>
 - **API Docs v2:** <https://dhanhq.co/docs/v2/>
 - **Orders reference:** <https://dhanhq.co/docs/v2/orders/>
 - **Market Quote / LTP:** <https://dhanhq.co/docs/v2/market-quote/>
@@ -929,7 +952,7 @@ df.dropna(inplace=True)  # always after rolling ops, before backtest
 
 **Hard constraints:**
 
-1. Use **open-source vectorbt only** — pin `vectorbt==0.28.2`. Do NOT write `vectorbt>=1.0` — v1.x is the paid VectorBT PRO product and will fail to install on the free tier.
+1. Use `vectorbt==1.0.0` — pin exactly. v1.0.0 is open-source (went free in 2025). Do not upgrade without testing Numba compatibility.
 2. Python compatibility: `>=3.11,<3.13`. Do not generate code or CI configs targeting Python 3.13+ until Numba wheel availability is confirmed.
 
 **Correct usage:**

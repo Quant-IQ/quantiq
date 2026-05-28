@@ -13,8 +13,8 @@
 
 QuantIQ is a collaborative 12-week project to build a working paper-trading bot on the NSE using the Dhan API. Equal parts learning vehicle, team collaboration exercise, and portfolio piece.
 
-**Scope:** Strategy design → backtesting → live paper trading via Dhan API  
-**Market:** NSE equity (with F&O context)  
+**Scope:** Strategy design → backtesting → live paper trading via Dhan API
+**Market:** NSE equity (with F&O context)
 **Timeline:** 12 weeks · 5 phases · public after Week 8
 
 ---
@@ -37,7 +37,6 @@ Phase 1 roles assigned 17 May 2026. Reviewed again at end of Phase 1. P = primar
 | SmS  | Data Engineering (P) \| Analyst / Docs (S)   | Active          |
 | AK   | Dev / Infra (P) \| Data Engineering (S)      | Active          |
 | ShS  | Analyst / Docs (P) \| Dev / Infra (S)        | Active          |
-| HG   | Analyst / Docs (P) \| Quant / Strategy (S)   | Phase 0 pending |
 
 _Roles reviewed end of Phase 1 / start of Phase 2._
 
@@ -62,7 +61,7 @@ _Roles reviewed end of Phase 1 / start of Phase 2._
 
 ```bash
 # 1. Clone and enter the repo
-git clone https://github.com/QuantIQ-Team/quantiq.git
+git clone https://github.com/Quant-IQ/quantiq.git
 cd quantiq
 
 # 2. Confirm your Python version
@@ -157,9 +156,9 @@ Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a PR. Key rules:
 
 ## Legal
 
-Algo trading on your own account for personal use is legal in India under SEBI guidelines. This project does not manage third-party capital and is not offered as a commercial service. Reference: [SEBI Circular — Algorithmic Trading by Retail Investors (2022)](https://www.sebi.gov.in/legal/circulars/jan-2022/algorithmic-trading-by-retail-investors_55170.html).
+Algo trading on your own account for personal use is legal in India under SEBI guidelines. This project does not manage third-party capital and is not offered as a commercial service. The current binding regulation is the [SEBI Circular — Safer Participation of Retail Investors in Algorithmic Trading (Feb 2025)](https://www.sebi.gov.in/legal/circulars/feb-2025/safer-participation-of-retail-investors-in-algorithmic-trading_91614.html), which became fully mandatory on 1 April 2026.
 
 ---
 
-_README is a living document. Updated at the end of each phase by the Analyst / Docs role._  
+_README is a living document. Updated at the end of each phase by the Analyst / Docs role._
 _Last updated: Week 1_
