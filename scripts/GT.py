@@ -6,7 +6,10 @@ from ta.momentum import RSIIndicator
 from ta.trend import MACD
 
 # Pristine production logger setup
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+logging.basicConfig(
+	level=logging.INFO,
+	format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 VALID_PERIODS = {"1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"}
