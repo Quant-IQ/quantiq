@@ -224,6 +224,9 @@ __marimo__/
 
 # Claude AI
 .claude/
+# Temporary local files
+test*.py
+security_id_list.csv
 
 # Temp files
 temp/
