@@ -27,6 +27,9 @@ def fetch_market_summary(ticker: str = "RELIANCE.NS") -> dict[str, float | str]:
         ValueError: If yfinance returns no data for the requested ticker.
         Exception: If the yfinance download call fails unexpectedly.
     """
+    if not ticker.endswith(".NS"):
+        raise ValueError(f"NSE ticker must include the '.NS' suffix: {ticker!r}")
+
     # Download one year of daily market data from Yahoo Finance.
     try:
         data = yf.download(
