@@ -226,7 +226,9 @@ __marimo__/
 .claude/
 
 # Temp files
-temp/
+temp/*
+!temp/.gitkeep
+# Keep the temp directory but ignore all files in it, except for .gitkeep which is a placeholder to keep the directory in version control.
 
 # Cache and Data files
 cache/*
