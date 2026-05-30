@@ -1,0 +1,33 @@
+{
+    "editor.formatOnSave": true,
+    "editor.rulers": [88],
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.pytest_cache": true
+    },
+
+    "python.terminal.useEnvFile": true,
+    "python.analysis.typeCheckingMode": "basic",// will make strict at start of Phase 2 or 3.
+    "python-envs.workspaceSearchPaths": [
+        ".venv",
+        "*/.venv",
+        "venv"
+    ],
+
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+
+    "[markdown]": {
+        "diffEditor.ignoreTrimWhitespace": true
+    },
+
+    "githubPullRequests.pushBranch": "always",
+    "terminal.integrated.defaultProfile.windows": "Git Bash"
+}

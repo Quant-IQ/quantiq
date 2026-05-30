@@ -2,7 +2,7 @@
 
 ## 📝 Details
 - **Role:** Data Engineer, Analyst/Docs
-- **GitHub Username:** @sam18-VK (https://github.com/sam18-VK)
+- **GitHub Username:** [@sam18-VK](https://github.com/sam18-VK)
 - **Discord Handle:** @samarth.18.
 
 ## 🎯 Project Goals
@@ -18,4 +18,5 @@ What do you want to get out of the QuantIQ project over the next 12 weeks?
 - **Financial Markets:** Intermediate
 
 ## ⚡ Fun Fact / Icebreaker
-- Music lover I
+
+- Love discovering new music and playlists 🎧 
