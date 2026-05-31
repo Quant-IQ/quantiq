@@ -4,10 +4,13 @@ import pandas as pd
 import yfinance as yf
 from ta.trend import SMAIndicator
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
 logger = logging.getLogger(__name__)
 
-NIFTY50_PICKS = ["WIPRO.NS", "BAJFINANCE.NS", "TATAMOTORS.NS", "SUNPHARMA.NS", "AXISBANK.NS"]
+NIFTY50_PICKS = ["WIPRO.NS", "BAJFINANCE.NS", "INFY.NS", "SUNPHARMA.NS", "AXISBANK.NS"]
 
 
 def validate_inputs(ticker: str, period: str) -> bool:
