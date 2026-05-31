@@ -2,7 +2,10 @@ import yfinance as yf
 import logging
 from typing import Dict
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+      format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
