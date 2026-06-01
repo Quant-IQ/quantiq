@@ -3,7 +3,10 @@ import pandas as pd
 import yfinance as yf
 import vectorbt as vbt
 from ta.trend import SMAIndicator
-logging.basicConfig(level=logging.INFO , format="%(message)s")
+logging.basicConfig(
+    level=logging.INFO ,
+    format=" %(asctime)s | %(levelname)s |%(name)s | %(message)s" ,
+)
 logger = logging.getLogger(__name__)
 
 def crossover_strategy(
