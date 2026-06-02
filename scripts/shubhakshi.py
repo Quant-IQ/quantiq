@@ -2,9 +2,12 @@ import logging
 import yfinance as yf
 from ta.trend import SMAIndicator
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
 
+logger = logging.getLogger(__name__)
 VALID_PERIODS = {
     "1d",
     "5d",
