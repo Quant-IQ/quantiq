@@ -64,7 +64,6 @@ def fetch_ohlc(
 	    on download failure or if yfinance returns an empty result.
 
 	Raises:
-	    ValueError: If ``ticker`` does not end with ``.NS`` or ``.BO``.
 	    ValueError: If ``period`` or ``interval`` is not a recognised yfinance value.
 
 	Example:
@@ -85,9 +84,12 @@ def fetch_ohlc(
 	    indexed by ``DatetimeIndex``. OHLC values are split- and dividend-adjusted.
 	    NaNs already dropped — safe to pass directly to indicator functions.
 
+	    Missing suffix is handled automatically::
+
+	        fetch_ohlc("RELIANCE")   # auto-corrected to "RELIANCE.NS", warning logged
+
 	    These calls raise ``ValueError``::
 
-	        fetch_ohlc("RELIANCE")            # missing .NS — silently pulls US data
 	        fetch_ohlc("INFY.NS", period="3w")       # invalid yfinance period
 	        fetch_ohlc("TCS.NS", interval="45m")     # invalid yfinance interval
 
@@ -96,11 +98,8 @@ def fetch_ohlc(
 	    the last 60 days — yfinance hard limit.
 	"""  # noqa: E101
 	if not (ticker.endswith(".NS") or ticker.endswith(".BO")):
-		raise ValueError(
-			f"Ticker '{ticker}' missing exchange suffix. "
-			"Append '.NS' for NSE or '.BO' for BSE. "
-			"An unsuffixed ticker silently returns US equity data."
-		)
+		ticker = ticker + ".NS"
+		logger.warning("No exchange suffix detected — appended '.NS': %s", ticker)
 
 	if period not in _VALID_PERIODS:
 		raise ValueError(
