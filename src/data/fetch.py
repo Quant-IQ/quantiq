@@ -115,13 +115,20 @@ def fetch_ohlc(
 
 			df = fetch_ohlc("RELIANCE.NS")
 			if df is None:
+				# download failed or ticker returned no data
 				...
 
+		Missing suffix is auto-corrected (warning logged)::
+
+			fetch_ohlc("RELIANCE")  # corrected to "RELIANCE.NS"
+
+		These calls raise ``ValueError``::
+
+			fetch_ohlc("INFY.NS", period="3w")    # invalid period
+			fetch_ohlc("TCS.NS", interval="45m")  # invalid interval
+
 	Note:
-		Sub-minute intervals (``1m``, ``2m``) are limited to ~7 days. Hourly
-		intervals (``1h``) empirically return up to 3+ months. Yahoo Finance
-		enforces these limits server-side; they may change without notice.
-		Cache is stored at ``src/data/cache/tickers/<ticker>__<period>__<interval>.parquet``.
+		Cache stored at ``src/data/cache/tickers/<ticker>__<period>__<interval>.parquet``.
 	"""  # noqa: E101
 	if not ticker.startswith("^") and not (
 		ticker.endswith(".NS") or ticker.endswith(".BO")
@@ -200,7 +207,8 @@ def fetch_batch(
 	"""Fetch OHLCV data for multiple tickers, using cache where available.
 
 	Splits tickers into cache hits and misses. Hits are loaded from parquet.
-	Misses are downloaded in a single ``yf.download`` call and written to cache.
+	Misses are downloaded via ``yf.download`` (single HTTP call for multiple misses,
+	string call for a single miss) and written to cache.
 	Failed tickers return ``None`` in the result dict — they do not raise.
 
 	Args:
