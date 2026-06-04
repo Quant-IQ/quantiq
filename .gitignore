@@ -236,6 +236,8 @@ temp/*
 # Cache and Data files
 cache/*
 !cache/.gitkeep
+src/data/cache/**/*.parquet
+!src/data/cache/**/.gitkeep
 *.pkl
 *.csv
 
