@@ -1,0 +1,2 @@
+class DynamicWatchlist:
+    pass
