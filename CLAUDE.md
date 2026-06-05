@@ -1,15 +1,12 @@
 # CLAUDE.md — QuantIQ Project Context
 
-> Read this file in full at the start of every session. It is the authoritative reference for project
-> architecture, conventions, team structure, and AI behaviour rules. Do not infer from the codebase
-> alone — this file explains intent, not just structure.
+> Read full at session start. Authoritative reference for architecture, conventions, team structure, AI behaviour rules. Don't infer from codebase alone — explains intent, not just structure.
 
 ---
 
 ## 1. Project Overview
 
-**QuantIQ** is a 12-week collaborative algorithmic trading project targeting NSE Indian equity stocks.
-It is simultaneously a learning vehicle, a team collaboration exercise, and a portfolio piece.
+**QuantIQ** — 12-week collaborative algorithmic trading project targeting NSE Indian equity stocks. Learning vehicle, team collaboration exercise, portfolio piece.
 
 | Attribute        | Value                                                        |
 | ---------------- | ------------------------------------------------------------ |
@@ -23,8 +20,7 @@ It is simultaneously a learning vehicle, a team collaboration exercise, and a po
 | Project duration | 12 weeks, 5 phases                                           |
 | Repo visibility  | Private until Phase 3 (~Week 8), then public                 |
 
-**Do not suggest going live with real capital.** Paper trading only until all members agree and
-at least 2–3 weeks of paper logs have been reviewed.
+**Do not suggest going live with real capital.** Paper trading only until all members agree and at least 2–3 weeks of paper logs reviewed.
 
 ---
 
@@ -59,6 +55,8 @@ quantiq/
 │   │   └── logger.py               # Trade signal logging to logs/trades.csv
 │   └── dashboard/                   # Streamlit UI
 │       └── app.py                   # Live price + current signal + trade log view
+├── scripts/                         # Phase 1 individual analysis scripts + general utilities
+│   └── <handle>.py                  # One file per member — fetch NSE data, print stats
 ├── backtest/
 │   └── strategy_v1.ipynb            # vectorbt backtest — SMA crossover on NIFTY 1yr
 ├── notebooks/
@@ -71,9 +69,10 @@ quantiq/
     └── architecture.md              # Plain-English system architecture explanation
 ```
 
-**All `src/` directories are scaffolded with `.gitkeep` files. Implementation begins Phase 1.**
-**All src/ files listed above are planned targets, not current files**
-Do not add files outside this structure without discussing with the Project Lead (RS).
+**All `src/` directories scaffolded with `.gitkeep`. `src/` implementation begins Phase 3.**
+**All `src/` files above: planned targets, not current files.**
+**Phase 1 work goes in `scripts/` — see §7. `scripts/` may be cleaned before repo goes public (Phase 5).**
+No files outside this structure without discussing with Project Lead (RS).
 
 ---
 
@@ -102,15 +101,14 @@ Do not add files outside this structure without discussing with the Project Lead
 | `jupyter` | Notebooks for analysis and backtest      |
 | `pytest`  | Unit tests (add as project matures)      |
 | `black`   | Code formatter — run before every commit |
-| `flake8`  | Linter                                   |
+| `ruff`    | Linter + import sorter (replaces flake8) |
 
 ### Tool Philosophy — FOSS First
 
-Always recommend free and open-source alternatives over proprietary or paid tools. This is a
-non-negotiable project default. Specifically:
+Always recommend free and open-source alternatives over proprietary or paid tools. Non-negotiable project default. Specifically:
 
 - Editor: VS Code (standing exception to FOSS rule — team uses VS Code, not VSCodium)
-- Workspace: AppFlowy (not Notion)
+- Workspace: Notion (free tier, 10 collaborators — switched from AppFlowy which caps at 2)
 - Broker API: Dhan (not Zerodha Kite — Rs 2000/month)
 - Charts: Plotly (not paid charting libs)
 - Dashboard deploy: Streamlit Cloud free tier (not Vercel or Heroku)
@@ -153,7 +151,7 @@ DHAN_ACCESS_TOKEN=your_access_token_here
 
 **Never hardcode credentials. Never commit `.env`. Always load via `os.getenv()` or `python-dotenv`.**
 
-Dhan access tokens expire every **24 hours** (SEBI hard cap) and must be manually regenerated from the Dhan profile page daily.
+Dhan access tokens expire every **24 hours** (SEBI hard cap) — must be manually regenerated from Dhan profile page daily.
 
 ---
 
@@ -161,8 +159,7 @@ Dhan access tokens expire every **24 hours** (SEBI hard cap) and must be manuall
 
 ### Docstrings — Mandatory on Every Function
 
-Every function in `src/` must have a docstring. This is non-negotiable — it is what separates
-a student project from a professional one, and the Docs role reviews for this on every PR.
+Every function in `src/` must have docstring. Non-negotiable — separates student project from professional one. Docs role reviews on every PR.
 
 ```python
 def calculate_sma(data: pd.Series, window: int) -> pd.Series:
@@ -231,8 +228,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 ```
 
-Use `logger.info()` for normal events, `logger.warning()` for unexpected but recoverable states,
-`logger.error()` for failures. Remove all `print()` statements before opening a PR.
+Use `logger.info()` for normal events, `logger.warning()` for unexpected but recoverable states, `logger.error()` for failures. Remove all `print()` before opening PR.
 
 ### Type Hints — Required in `src/`
 
@@ -258,17 +254,17 @@ yf.download("RELIANCE", ...)
 
 ### Dhan API Ticker Format
 
-Dhan uses a different format — security ID + exchange segment:
+Dhan uses **integer security IDs**, not ISIN strings:
 
 ```python
-# Dhan format for Reliance equity
-"NSE_EQ|INE002A01018"
+# Correct — integer security IDs
+dhan.quote_data({"NSE_EQ": [11536, 1333]})   # Reliance, HDFC Bank
 
-# Dhan format for Nifty50 futures
-"NSE_FNO|NIFTY"
+# DO NOT USE — ISIN strings silently fail in v2
+dhan.quote_data({"NSE_EQ": ["INE002A01018"]})  # WRONG
 ```
 
-Maintain a `src/data/ticker_map.py` mapping common names to both yfinance and Dhan formats.
+Find integer IDs via `dhan.fetch_security_list("compact")`. Maintain `src/data/ticker_map.py` mapping common names to both yfinance and Dhan formats.
 
 ### pandas — Key Patterns
 
@@ -298,12 +294,12 @@ above_sma = df[df["Close"] > df["SMA20"]]
 
 ### Rate Limiting — Dhan API
 
-Dhan allows **25 orders/second**. Track and throttle:
+10 orders/sec per exchange per client (SEBI/NSE mandate — hard cap). Track and throttle:
 
 ```python
 import time
 
-MAX_ORDERS_PER_SEC = 20  # Stay under 25 limit with margin
+MAX_ORDERS_PER_SEC = 8  # Stay well under 10/sec SEBI hard limit
 _order_timestamps: list[float] = []
 
 def rate_limited_order(order_params: dict) -> dict:
@@ -333,41 +329,46 @@ members/your-name                # Phase 0 onboarding commit
 
 ### Commit Format
 
-```text
-type: short description (max 72 chars)
+Follows [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/).
 
-Types: feat | fix | data | docs | test | refactor | chore
+```text
+type(scope): short description (max 72 chars, lowercase)
+
+Types:  feat | fix | docs | style | refactor | test | build | chore
+Scopes: data | broker | strategy | backtest | dashboard | bot
+
+# Omit scope only for repo-wide changes (e.g. docs: update README)
 
 Examples:
-feat: add RSI indicator to data pipeline
-fix: handle NaN values in SMA crossover signal
-data: add NIFTY50 constituent ticker map
+feat(data): add RSI indicator to data pipeline
+fix(strategy): handle NaN values in SMA crossover signal
+feat(broker): add daily token refresh scheduler
 docs: update README with backtest results
-refactor: extract order logging to separate module
+refactor(data): extract order logging to separate module
 chore: pin dependency versions in requirements.txt
 ```
 
 ### PR Rules — Non-Negotiable
 
 1. Never push directly to `main`
-2. Never merge your own PR — always needs one reviewer
-3. Write `Closes #N` in PR description to auto-close the linked Issue
-4. Fill the PR template completely — do not delete sections
-5. Remove all `print()` statements and debug code before opening
-6. All functions must have docstrings — reviewer will block merge if missing
-7. No hardcoded credentials — reviewer will block merge immediately
-8. Add `Closes #N` for every Issue the PR resolves
-9. Reviewer must post within **48 hours** of being assigned — post in #dev if you cannot
-10. Reviewer uses **Squash and merge** — enables auto-delete of the head branch
+2. Never merge own PR — always needs one reviewer
+3. Write `Closes #N` in PR description to auto-close linked Issue
+4. Fill PR template completely — do not delete sections
+5. Remove all `print()` and debug code before opening
+6. All functions must have docstrings — reviewer blocks merge if missing
+7. No hardcoded credentials — reviewer blocks merge immediately
+8. Add `Closes #N` for every Issue PR resolves
+9. Reviewer must post within **48 hours** of assignment — post in #dev if unable
+10. Reviewer uses **Squash and merge** — enables auto-delete of head branch
 
 ### Issue Structure
 
-Every task lives as a GitHub Issue. Use the provided templates:
+Every task lives as GitHub Issue. Use provided templates:
 
-- **Task template**: for planned work
-- **Bug template**: for defects
+- **Task template**: planned work
+- **Bug template**: defects
 
-Labels in use: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-lead`, `blocked`, `good-first-issue`
+Labels: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-lead`, `blocked`, `good-first-issue`
 
 ---
 
@@ -378,39 +379,71 @@ Labels in use: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-
 | Phase | Weeks | Core Deliverable                                           | Status      |
 | ----- | ----- | ---------------------------------------------------------- | ----------- |
 | 0     | 1     | Every member: first commit (`members/name.md`)             | Complete    |
-| 1     | 2–4   | Individual analysis scripts — fetch NSE data, print stats  | Active      |
-| 2     | 5–7   | `notebooks/market_analysis.ipynb` — group NIFTY50 analysis | Not started |
+| 1     | 2–4   | `scripts/<handle>.py` — fetch NSE data, SMA20/50 stats     | Complete    |
+| 2     | 5–7   | `notebooks/market_analysis.ipynb` — group NIFTY50 analysis | Active      |
 | 3     | 8–9   | `backtest/strategy_v1.ipynb` — Sharpe, drawdown, win rate  | Not started |
 | 4     | 10–11 | Live bot — paper trading across 3+ sessions via Dhan API   | Not started |
 | 5     | 12    | Public repo — clean code, full README, Streamlit deployed  | Not started |
 
-### Current Phase: Phase 1 — Foundations (Week 2)
+### Current Phase: Phase 2 — Market Analysis (Week 4, started 1 June 2026)
 
-**Active tasks this week:**
+Phase 2 deliverable: `notebooks/market_analysis.ipynb` — group NIFTY50 analysis. Phase 2 sync held **1 June 2026**. Sub-team leads and Co-Lead confirmed at sync.
 
-- All members: post Monday standup in Discord `#standup`
-- NS, AJ, AD (pending members): complete Phase 0 catch-up by Thursday 15 May
-- GT (Quant): start Varsity Module 2, Investopedia entries for SMA/EMA/RSI/MACD
-- AV (Data): NumPy quickstart + yfinance, fetch RELIANCE.NS locally
-- AR (Dev): CS50P lectures 5–8, REST APIs in Python (Real Python)
-- RT (Quant): start Varsity Module 2, Investopedia entries for SMA/EMA/RSI/MACD (support GT)
-- EB (Docs): chase standups Tuesday evening, DM anyone who hasn't posted
+**Active tasks this week (Week 4 — 4 June 2026):**
+
+- All members: post standup in Discord `#standup` (anytime this week, hard deadline Sunday night)
+- **RS** — stock: `TVS.NS` | merge `fetch.py` v1 PR; spec `indicators.py` interface with AV; write fundamental framework spec
+- **GT** — stock: `M&M.NS` | co-lead check-ins; spec `src/data/visualise.py` for AR to implement; co-build `validate.py` with AR
+- **AV** — stock: `TCS.NS` | own RSI + MACD (#24); spec `indicators.py` interface with RS; coordinate notebook section PRs
+- **AR** — stock: `HDFCBANK.NS` | implement `visualise.py` from GT spec; co-build `validate.py` with GT; supplement `indicators.py` with RS
+- **SmS** — stock: `APOLLOMICRO.NS` | complete notebook section once skeleton merged
+- **EB** — stock: `ICICIBANK.NS` | Phase 1 retrospective in Notion; begin Phase 2 weekly log; doc quality pass on `fetch.py`
+- **RT** — stock: `LT.NS` | support AV on notebook section coordination
+- **AJ** — stock: `RELIANCE.NS` | contribute notebook section once skeleton merged
+- **AK** — stock: `INFY.NS` | contribute notebook section once skeleton merged
+- **NS** — stock: `TITAN.NS` | contribute notebook section once skeleton merged
+- **SS** — stock: `HCLTECH.NS` | contribute notebook section once skeleton merged
+- **ShS** — stock: `AXISBANK.NS` | contribute notebook section once skeleton merged
+
+### Notebook Section Order — `notebooks/market_analysis.ipynb`
+
+Sector-grouped. RS + GT own section 13 (correlation heatmap).
+
+| # | Sector | Ticker | Member |
+|---|--------|--------|--------|
+| 1 | Energy/Conglomerate | RELIANCE.NS | AJ |
+| 2 | IT | TCS.NS | AV |
+| 3 | IT | INFY.NS | AK |
+| 4 | IT | HCLTECH.NS | SS |
+| 5 | Banking | HDFCBANK.NS | AR |
+| 6 | Banking | ICICIBANK.NS | EB |
+| 7 | Banking | AXISBANK.NS | ShS |
+| 8 | Auto | TVS.NS | RS |
+| 9 | Auto | M&M.NS | GT |
+| 10 | Infrastructure | LT.NS | RT |
+| 11 | Consumer | TITAN.NS | NS |
+| 12 | Defense | APOLLOMICRO.NS | SmS |
+| 13 | Cross-sector | Correlation heatmap | RS + GT |
+
+**Member section template:** fetch → summary stats → candlestick + EMA20/50 → MACD → RSI → volume. Fundamentals via `yf.Ticker.info` with None-guards: P/E, EPS growth, D/E, Cash/Debt, ICR, PEG (5Y+1Y), reserve & surplus, promoter%, pledged shares%, dividend yield. End with 3–5 sentence observation.
+
+---
 
 ### Target Architecture (Full System — Phases 1–5)
 
 ```text
-                    ┌─────────────────┐
+                    ┌─────────────────�
                     │   yfinance      │  Historical OHLCV (backtest + init)
                     └────────┬────────┘
                              │
-                    ┌────────▼────────┐
+                    ┌────────▼────────�
                     │  src/data/      │  fetch.py → indicators.py → validate.py
                     │  fetch.py       │  Output: clean DataFrame with OHLCV + indicators
                     └────────┬────────┘
                              │
-              ┌──────────────┼──────────────┐
+              ┌──────────────┼──────────────�
               │              │              │
-    ┌─────────▼──────┐  ┌────▼────┐  ┌────▼─────────────┐
+    ┌─────────▼──────�  ┌────▼────�  ┌────▼─────────────�
     │  backtest/     │  │strategy/│  │ execution/        │
     │  vectorbt      │  │ signals │  │ dhan_client.py    │
     │  Phase 3       │  │ Phase 2+│  │ order_manager.py  │
@@ -418,12 +451,12 @@ Labels in use: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-
                              │       │ logger.py         │
                              │       └────────┬──────────┘
                              │                │
-                    ┌────────▼────────────────▼──┐
+                    ┌────────▼────────────────▼──�
                     │     logs/trades.csv         │
                     │     Signal log (gitignored) │
                     └────────────────┬────────────┘
                                      │
-                    ┌────────────────▼────────────┐
+                    ┌────────────────▼────────────�
                     │     dashboard/app.py         │
                     │     Streamlit — Phase 5      │
                     └─────────────────────────────┘
@@ -433,27 +466,26 @@ Labels in use: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-
 
 ## 8. Team Structure
 
-Roles assigned for Phase 1 on **17 May 2026**. Will be reviewed again at end of Phase 1 or start of Phase 2 based on actual performance. Roles marked (P) primary, (S) secondary.
+Roles confirmed at Phase 2 sync on **1 June 2026**. Sub-team leads assigned. Roles marked (P) primary, (S) secondary.
 
-| Handle | Role (P / S) — Phase 1 | Role Colour | Owns |
-| --- | --- | --- | --- |
-| RS | Project Lead / All | `#F0C040` | Repo, Discord, AppFlowy, decisions, unblocking |
-| EB | Analyst / Docs (P) / Dev / Infra (S) | `#FF7B9C` | README, AppFlowy log, Streamlit dashboard |
-| GT | Quant / Strategy (P) / Analyst / Docs (S) | `#F0883E` | Strategy design, backtesting, indicator research |
-| AV | Quant / Strategy (P) / Data Engineering (S) | `#F0883E` | Strategy support, indicator work |
-| AR | Data Engineering (P) / Dev / Infra (S) | `#BC8CFF` | Data pipelines, indicator work, data validation |
-| RT | Quant / Strategy (P) / Dev / Infra (S) | `#F0883E` | Strategy design, backtesting, indicator research |
-| NS | Dev / Infra (P) / Data Engineering (S) | `#58A6FF` | Dev / Infra support, data pipeline — introduced at 17 May sync |
-| AJ | Data Engineering (P) / Quant / Strategy (S) | `#BC8CFF` | Data pipelines, indicator work, strategy research support |
-| SS | Quant / Strategy (P) / Analyst / Docs (S) | `#F0883E` | Strategy research, documentation support |
-| SmS | Data Engineering (P) / Analyst / Docs (S) | `#BC8CFF` | Data pipeline support, AppFlowy log, README |
-| AK | Dev / Infra (P) / Data Engineering (S) | `#58A6FF` | Bot engine support, data pipeline |
-| ShS | Analyst / Docs (P) / Dev / Infra (S) | `#FF7B9C` | README, AppFlowy log, dev support |
-| HG | Analyst / Docs (P) / Quant / Strategy (S) | `#FF7B9C` | New member — Phase 0 pending (RS overseeing) |
+| Handle | Role (P / S) — Phase 2 | Sub-team Lead | Role Colour | Owns |
+| --- | --- | --- | --- | --- |
+| RS | Project Lead / All | — | `#F0C040` | Repo, Discord, Notion, decisions, unblocking |
+| GT | Quant / Strategy (P) / Analyst / Docs (S) | **Co-Lead (whole team)** | `#6AC074` | Co-lead all tracks until Dev/Docs co-lead assigned; strategy design, backtesting |
+| EB | Analyst / Docs (P) / Dev / Infra (S) | **Docs lead** | `#2EC4B6` | README, Notion log, Streamlit dashboard |
+| AV | Quant / Strategy (P) / Data Engineering (S) | **Quant lead** | `#2EC4B6` | Quant track ownership, NIFTY50 analysis, indicator work |
+| AR | Data Engineering (P) / Dev / Infra (S) | **Dev lead** | `#2EC4B6` | Dev/Infra track ownership, data pipelines, data validation |
+| SmS | Data Engineering (P) / Analyst / Docs (S) | **Data lead** | `#2EC4B6` | Data pipeline ownership, Notion log, README |
+| RT | Quant / Strategy (P) / Dev / Infra (S) | — | `#F0883E` | Strategy design, backtesting, indicator research |
+| NS | Dev / Infra (P) / Data Engineering (S) | — | `#58A6FF` | Dev / Infra support, data pipeline |
+| AJ | Data Engineering (P) / Quant / Strategy (S) | — | `#BC8CFF` | Data pipelines, indicator work, strategy research support |
+| SS | Quant / Strategy (P) / Analyst / Docs (S) | — | `#F0883E` | Strategy research, documentation support |
+| AK | Dev / Infra (P) / Data Engineering (S) | — | `#58A6FF` | Bot engine support, data pipeline |
+| ShS | Analyst / Docs (P) / Dev / Infra (S) | — | `#FF7B9C` | README, Notion log, dev support |
 
-**Team size:** 13 confirmed members (12 Phase 0 complete, 1 pending). AD departed before Phase 1. Roles reviewed again at end of Phase 1 / start of Phase 2. Target: 12–14 active members, natural attrition expected to stabilise at 8–12 by Phase 4.
+**Team size:** 12 active members. AD departed before Phase 1. HG departed Week 2 Phase 1.
 
-**Co-Lead role:** Vacant. To be assigned end of Phase 1 or Phase 2 as team scales. Sub-team structure planned for 14+ members: Project Lead → Co-Lead (Quant / Strategy + Data Engineering) + Co-Lead (Dev / Infra + Analyst / Docs).
+**Co-Lead:** GT assigned Co-Lead for whole team (1 June 2026). Covers all tracks until second Co-Lead for Dev/Infra + Analyst/Docs track assigned. Sub-team structure: Project Lead → Co-Lead (GT) → Sub-team leads (AV: Quant, SmS: Data, AR: Dev, EB: Docs).
 
 **Attrition rule:** Two consecutive missed standups with no explanation = voluntary exit.
 
@@ -461,7 +493,7 @@ Roles assigned for Phase 1 on **17 May 2026**. Will be reviewed again at end of 
 
 ## 9. Communication and Workflow Norms
 
-### Standup Format — Discord `#standup`, Every Monday
+### Standup Format — Discord `#standup`, Any day (hard deadline Sunday night)
 
 ```text
 WEEK [n] — [Name] — [Role]
@@ -470,9 +502,9 @@ Next:     What you are working on this week
 Blocked:  Anything stopping you (or 'Nothing')
 ```
 
-RS posts first every Monday. EB chases anyone who hasn't posted by Tuesday evening via DM (private DM only — no public call-outs).
+RS posts first (flexible — no fixed day). Week runs Monday–Sunday. Hard deadline: Sunday night. EB chases anyone who hasn't posted by Thursday night via DM (private DM only — no public call-outs).
 
-**Accountability escalation:** Late by Tuesday evening → Co-Lead DMs. Missed 2 weeks in a row → Co-Lead alerts RS. Missed 2+ weeks with no commits → treated as voluntary exit. No exceptions.
+**Accountability escalation:** Missing by Thursday night → EB DMs. Missed Sunday deadline → Co-Lead DMs. Missed 2 weeks in a row → Co-Lead alerts RS. Missed 2+ weeks with no commits → treated as voluntary exit. No exceptions.
 
 ### Task Lifecycle
 
@@ -482,8 +514,8 @@ Issue created → assigned to one person → moves to "This Week" on Kanban
 → reviewer approves → merged → Issue auto-closes → card moves to Done
 ```
 
-**One owner per task.** Two assignees = no one is responsible.
-**One week per task maximum.** If it spans longer, break it into sub-Issues.
+**One owner per task.** Two assignees = no one responsible.
+**One week per task max.** Spans longer → break into sub-Issues.
 **Blocked tasks:** add `blocked` label within 24 hours of getting stuck. Co-Lead unblocks.
 
 ### Tool Usage
@@ -493,11 +525,10 @@ Issue created → assigned to one person → moves to "This Week" on Kanban
 | Discord        | Primary team communication             | All project discussions here                 |
 | WhatsApp       | Urgent human messages only             | "Are you alive?" — not project tracking      |
 | GitHub         | Code, PRs, Issues, Projects Kanban     | Code-linked tasks only                       |
-| AppFlowy Cloud | Docs, weekly log, team Kanban overview | FOSS. Shared via <quantiq.team@quant-iq.net> |
+| Notion Cloud | Docs, weekly log, team Kanban overview | FOSS. Shared via <quantiq.team@quant-iq.net> |
 | VS Code        | Code editor                            | Standing exception to FOSS-first rule        |
 
-AppFlowy workspace is shared via company email `quantiq.team@quant-iq.net` (domain: `quant-iq.net`).
-This email is for AppFlowy Cloud login and shared project comms only — it does not replace Discord.
+Notion workspace shared via company email `quantiq.team@quant-iq.net` (domain: `quant-iq.net`). Email for Notion Cloud login and shared project comms only — does not replace Discord.
 
 ---
 
@@ -507,7 +538,7 @@ This email is for AppFlowy Cloud login and shared project comms only — it does
 | --- | ------------------------------------- | -------------------------------------------------------- |
 | 1   | Dhan API over Zerodha Kite            | Free vs Rs 2000/month                                    |
 | 2   | Python as project language            | Best library ecosystem for data + trading                |
-| 3   | AppFlowy over Notion                  | FOSS, self-hostable, no vendor lock-in                   |
+| 3   | Notion over AppFlowy                  | AppFlowy free tier caps at 2 collaborators; Notion free supports 10 |
 | 4   | Private repo until Phase 3 (~Week 8)  | Build first, show when results exist                     |
 | 5   | vectorbt over backtrader              | Simpler API for this use case, faster for param sweeps   |
 | 6   | `ta` library over TA-Lib              | No C compiler required — easier team install             |
@@ -517,23 +548,153 @@ This email is for AppFlowy Cloud login and shared project comms only — it does
 | 10  | CS50P over paid Udemy courses         | Free, equivalent quality, no cost barrier for team       |
 | 11  | Paper trade only until team consensus | Never touch real capital without full team agreement     |
 | 12  | RT assigned Quant / Strategy          | Co-assigned with GT for strategy and backtesting         |
-| 13  | EB primary Docs, secondary Data       | Owns README, AppFlowy log, Streamlit dashboard           |
-| 14  | Co-Lead vacant — end of Phase 1 or 2  | Roles and strengths being established; team scaling      |
+| 13  | EB primary Docs, secondary Data       | Owns README, Notion log, Streamlit dashboard           |
+| 14  | GT assigned Co-Lead (1 June 2026)     | Whole-team co-lead; second Co-Lead (Dev/Docs) TBD        |
 | 15  | Dual-role model (P/S) for all members | Primary = ownership; secondary = support / cross-train   |
 | 16  | Second recruitment wave — up to 6 new | All who pass interview treated as full members           |
 
 ---
 
-## 11. Strategy Specification (Phase 3 Target)
+## 11. Product Vision — Full System
 
-### SMA Crossover — Primary Strategy
+Full QuantIQ system (v1 shippable by Week 12, v2+ post-project) — four layers:
+
+### Layer 1 — Data
+- `fetch.py` — OHLCV via yfinance (NSE/BSE, single + batch)
+- `indicators.py` — SMA, EMA, RSI, MACD, ATR, VWAP
+- `validate.py` — gap detection, holiday handling, bad tick filtering
+- **Fundamental data** — balance sheets, P&L, cash flows via BSE/NSE official filings or yfinance `.financials` / `.balance_sheet` / `.cashflow` (reliability TBD — research task assigned GT + AV)
+
+### Layer 2 — Screener + Watchlists
+- **Dynamic screener engine** — add/remove filters per run. Filter types: technical (price action, momentum, volatility), fundamental (P/E, P/B, ROE, D/E, earnings growth, FCF), quantitative (statistical)
+- **Named screeners** — save screener configs with description; re-run on demand
+- **Watchlists** — two types:
+  - *Static*: manually curated, hand-picked stocks
+  - *Dynamic*: linked to screener, auto-updates when screener runs
+- Cache screener output keyed by screener name + run date
+
+### Layer 3 — Strategy Engine
+- **Strategy builder** — define entry/exit triggers using technical, fundamental, quantitative conditions
+- **Execution modes** — run any strategy against:
+  - Watchlist (static or dynamic)
+  - Manual stock selection
+  - Full market universe
+- **Modes**: backtest (vectorbt) → paper trade (Dhan, signal log only) → live (Dhan, real capital — team consensus required)
+
+### Layer 4 — Dashboard (Streamlit)
+- Screener creation UI
+- Watchlist management
+- Strategy configuration
+- Live signal feed + trade log
+- Backtest results viewer
+
+---
+
+### v0.0.1 — Week 12 Deliverable
+
+Legend: ✅ full  🔧 basic  🔨 very basic  🔜 v0.0.2
+
+**Data**
+| ID | Task | Version |
+|----|------|---------|
+| D1 | `fetch.py` single ticker OHLCV | ✅ |
+| D2 | `fetch.py` batch fetch | ✅ |
+| D3 | `fetch.py` caching | ✅ |
+| D4 | `indicators.py` — SMA, EMA, RSI, MACD, ATR, VWAP + more as added | ✅ |
+| D5 | `validate.py` — gaps, holidays, bad ticks | ✅ |
+| D6 | Fundamental data source research | ✅ |
+| D7 | Fundamental data fetcher | ✅ |
+| D8 | Financial statement scraper | 🔨 very basic |
+| D9 | Stock universe manager | 🔧 basic |
+| D10 | Data pipeline scheduler | 🔧 basic |
+
+**Screener**
+| ID | Task | Version |
+|----|------|---------|
+| S1 | Technical filters | ✅ |
+| S2 | Fundamental filters | ✅ |
+| S3 | Quantitative filters (beta, vol percentile, z-score) | 🔜 v0.0.2 |
+| S4 | Screener engine (AND/OR filter logic) | ✅ |
+| S5 | Save/load named screener configs | ✅ |
+| S6 | Screener runner | ✅ |
+| S7 | Screener output cache | ✅ |
+| S8 | Profitability scoring / ranking | 🔜 v0.0.2 |
+| S9 | Screener builder UI (graphical) | 🔧 basic |
+
+**Watchlists**
+| ID | Task | Version |
+|----|------|---------|
+| W1 | Static watchlist | ✅ |
+| W2 | Dynamic watchlist (linked to screener) | ✅ |
+| W3 | Watchlist persistence | ✅ |
+| W4 | Watchlist manager (list/edit/delete) | 🔧 basic |
+| W5 | Watchlist UI in dashboard | 🔨 very basic |
+
+**Strategy**
+| ID | Task | Version |
+|----|------|---------|
+| ST1 | Strategy spec format (config-driven) | ✅ |
+| ST2 | Crossover strategy (EMA preferred over SMA — better for plots) | 🔨 very basic |
+| ST3 | RSI mean-reversion strategy | ✅ |
+| ST4 | Combined technical + fundamental strategy | 🔜 v0.0.2 |
+| ST5 | Strategy runner (on watchlist / manual / full market) | ✅ |
+| ST6 | Position sizing module | 🔜 v0.0.2 (paper trade only in v1) |
+| ST7 | Risk management (stop loss, max drawdown breaker) | 🔧 basic |
+| ST8 | Strategy builder UI | 🔧 basic (near-hardcoded; polish in v0.0.2) |
+
+**Backtest + Execution**
+| ID | Task | Version |
+|----|------|---------|
+| B1 | Backtest engine (vectorbt) | ✅ |
+| B2 | Backtest metrics (Sharpe, drawdown, win rate, Calmar) | ✅ |
+| B3 | Cost model (brokerage, slippage, STT) | 🔜 v0.0.2 (not useful with paper trading) |
+| B4 | Paper trade execution (signal log to CSV) | ✅ |
+| B5 | Live trade execution (Dhan `place_order`) | 🔜 v0.0.2 |
+| B6 | Order manager | 🔜 v0.0.2 |
+| B7 | Trade logger (SEBI 5yr CSV) | 🔜 v0.0.2 |
+| B8 | Backtest results viewer in dashboard | ✅ |
+
+**Execution Infrastructure**
+| ID | Task | Version |
+|----|------|---------|
+| E1 | Dhan client wrapper (auth, rate-limit) | ✅ |
+| E2 | WebSocket live feed | ✅ |
+| E3 | Session manager (daily login/logout) | ✅ |
+| E4 | Discord webhook alerts | ✅ |
+| E5 | Static IP whitelisting | ✅ |
+
+**Dashboard**
+| ID | Task | Version |
+|----|------|---------|
+| UI1 | App skeleton + routing | ✅ |
+| UI2 | Live price widget | 🔧 basic |
+| UI3 | Current signal display | ✅ |
+| UI4 | Trade log (paper only; "Coming Soon" under Live tab) | 🔧 basic |
+| UI5 | Screener runner + results table | ✅ |
+| UI6 | Watchlist viewer / manager | ✅ |
+| UI7 | Backtest results viewer | 🔨 very basic |
+| UI8 | Streamlit Cloud deployment | ✅ |
+| UI9 | Strategy config UI | ✅ |
+| UI10 | Screener builder UI (graphical) | 🔧 basic |
+
+**Docs**
+| ID | Task | Version |
+|----|------|---------|
+| DOC1 | `docs/architecture.md` updated | ✅ |
+| DOC2 | `CONTEXT.md` domain glossary | ✅ |
+| DOC3 | README (screenshots + backtest + final) | ✅ |
+| DOC4 | Notion weekly logs (Weeks 5–12) | ✅ |
+| DOC5 | LinkedIn posts | ✅ |
+| DOC6 | Public repo checklist | ✅ done (GitHub branch protection) |
+
+**SMA Crossover — Phase 3 Backtest (learning vehicle)**
 
 ```txt
 Entry signal:  SMA-20 crosses ABOVE SMA-50  →  BUY
 Exit signal:   SMA-20 crosses BELOW SMA-50  →  SELL
 Position size: Fixed lot (to be determined in Phase 3)
 Stop loss:     ATR-based trailing stop
-Universe:      NIFTY50 constituents — start with top 5 by liquidity
+Universe:      Dynamic watchlist from screener (replaces hardcoded NIFTY50 top 5)
 Timeframe:     Daily bars
 Backtest on:   1 year of NIFTY data (vectorbt)
 ```
@@ -553,11 +714,13 @@ Backtest on:   1 year of NIFTY data (vectorbt)
 - Slippage: 0.1% per trade
 - STT, exchange fees: include actual NSE rates
 
-### Alternative Strategies to Research (Phase 3 Extended)
+### v2+ Scope — Post Week 12
 
-- RSI mean-reversion (buy below 30, sell above 70)
-- Opening range breakout (ORB) on 15-minute bars
-- Momentum — top N NIFTY50 stocks by 20-day return
+- Full dynamic screener UI (add/remove filters graphically)
+- Fundamental analysis layer (once reliable NSE data source confirmed)
+- Strategy builder UI in dashboard
+- Full market universe screening
+- Live deployment with real capital (team consensus + 2–3 weeks paper log review)
 
 ---
 
@@ -566,13 +729,13 @@ Backtest on:   1 year of NIFTY data (vectorbt)
 ### Authentication
 
 ```python
-from dhanhq import dhanhq
+from dhanhq.dhanhq import dhanhq as DhanHQ
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-dhan = dhanhq(
+dhan = DhanHQ(
     client_id=os.getenv("DHAN_CLIENT_ID"),
     access_token=os.getenv("DHAN_ACCESS_TOKEN"),
 )
@@ -632,35 +795,37 @@ instruments = [
 
 **API constraints:**
 
-- Access token expires every **24 hours** (SEBI cap) — must regenerate daily from Dhan profile
-- Rate limit: 25 orders/second — always throttle
-- Paper trading = log signals to CSV only, do not call `place_order`
-- Never commit your access token — load from `.env` only
+- Access token expires every **24 hours** (SEBI cap) — must regenerate daily before 9:15 AM IST
+- Rate limit: 10 orders/second (SEBI/NSE hard cap) — always throttle, never exceed
+- No paper-trading sandbox — log signals to CSV only; use vectorbt for simulation
+- Never commit access token — load from `.env` only
 
 ---
 
 ## 13. Security Rules
 
-These are absolute. No exceptions regardless of context.
+Absolute. No exceptions regardless of context.
 
-1. **Never commit `.env`** — it is in `.gitignore`. If a token is committed, rotate it immediately.
+1. **Never commit `.env`** — in `.gitignore`. Token committed → rotate immediately.
 2. **Never hardcode credentials** — no `token = "abc123"` anywhere in `src/`
-3. **Audit before going public** — search entire repo for `token`, `key`, `secret`, `password` before
-   switching repo to public in Week 8–9
-4. **`.env.example` only** — this file has placeholder values, never real credentials
-5. **Logs are gitignored** — `logs/*.csv` must never be committed (may contain price data + signal patterns)
-6. **No team member shares their Dhan token** — every member generates their own from their Dhan account
+3. **Audit before going public** — search entire repo for `token`, `key`, `secret`, `password` before switching to public in Week 8–9
+4. **`.env.example` only** — placeholder values, never real credentials
+5. **Logs gitignored** — `logs/*.csv` must never be committed (may contain price data + signal patterns)
+6. **No member shares Dhan token** — every member generates own from their Dhan account
+7. **Static IP whitelisting mandatory** (SEBI Feb 2025) — set via `DhanLogin.set_ip()` before any live order. 7-day cooldown after setting; cannot modify within that window.
+8. **OAuth + TOTP 2FA mandatory** — all other auth methods discontinued per SEBI Feb 2025 circular. Use TOTP or OAuth flow (see §12 Authentication). Never generate code that bypasses 2FA.
+9. **Daily session logout required** — no persistent sessions across trading days. Bot must log out after market close (15:30 IST) and re-authenticate before 09:15 IST next session.
 
 ---
 
 ## 14. Documentation Strategy
 
-Documentation is layered across four levels. Each level has a specific owner.
+Layered across four levels. Each level has specific owner.
 
 | Layer | Location               | Owner      | Updated When                     |
 | ----- | ---------------------- | ---------- | -------------------------------- |
 | 1     | `README.md`            | EB (Docs)  | End of each phase                |
-| 2     | AppFlowy Weekly Log    | EB (Docs)  | Every Sunday night               |
+| 2     | Notion Weekly Log    | EB (Docs)  | Every Sunday night               |
 | 3     | Docstrings in `src/`   | All coders | On every function before PR open |
 | 4     | `docs/architecture.md` | RS + EB    | When system design changes       |
 
@@ -684,29 +849,29 @@ Post when output exists. Never post about intent.
 | 9    | Backtest equity curve + results — Sharpe, drawdown, win rate     |
 | 12   | Project wrap — what was built, who built it, GitHub link         |
 
-Maintain a shared draft doc in AppFlowy where teammates review LinkedIn posts before publishing.
+Maintain shared draft doc in Notion where teammates review LinkedIn posts before publishing.
 
 ---
 
 ## 16. Going Public — Week 8–9 Checklist
 
-Before switching the repo from private to public:
+Before switching repo from private to public:
 
 - [ ] Search entire repo for `token`, `key`, `secret`, `password` — zero results
 - [ ] `git log` audit — no sensitive data in any historical commit
-- [ ] `.env` not present anywhere in the repo or commit history
+- [ ] `.env` not present anywhere in repo or commit history
 - [ ] `logs/*.csv` not present in repo (gitignored correctly)
-- [ ] README stands alone — a stranger can read it and understand the project
-- [ ] Backtest results are in the repo — at minimum one equity curve and a results table
+- [ ] README stands alone — stranger can read it and understand the project
+- [ ] Backtest results in repo — at minimum one equity curve and results table
 - [ ] All functions in `src/` have docstrings
-- [ ] All team members have posted a thumbs-up in `#announcements`
+- [ ] All team members posted thumbs-up in `#announcements`
 - [ ] **Then**: GitHub → Settings → Danger Zone → Change visibility → Public
 
 ---
 
 ## 17. AI Behaviour Rules for Claude Code
 
-These rules apply to every interaction in this codebase. Read them before generating any code.
+Apply to every interaction in this codebase. Read before generating any code.
 
 ### Always
 
@@ -720,45 +885,52 @@ These rules apply to every interaction in this codebase. Read them before genera
 - Add `.NS` suffix to all NSE tickers used with yfinance
 - `dropna()` after every rolling window calculation before backtesting
 - Run `pip freeze > requirements.txt` after adding any new package
-- Follow the branch naming convention when creating branches
+- Follow branch naming convention when creating branches
 - Reference `Closes #N` in commit/PR messages when resolving Issues
+- Use `TimedRotatingFileHandler` with `backupCount=1825` for all audit logs (SEBI 5-year retention)
 
 ### Never
 
-- Suggest Zerodha Kite API (Rs 2000/month — Dhan is the chosen broker)
-- Suggest Notion (AppFlowy is the chosen workspace tool)
+- Suggest Zerodha Kite API (Rs 2000/month — Dhan is chosen broker)
+- Suggest AppFlowy (Notion is chosen workspace — AppFlowy free tier limited to 2 collaborators)
 - Recommend Python 3.13+ (breaks vectorbt and other data libraries)
 - Push directly to `main`
-- Merge a PR without a reviewer
+- Merge PR without reviewer
 - Hardcode any credential, token, or secret
 - Use `print()` in `src/` — use `logging`
 - Call `dhan.place_order()` in Phases 1–3 — log signals only
-- Recommend a paid tool when a free equivalent exists and is fit for purpose
+- Recommend paid tool when free equivalent exists and fits
+- Generate code that can exceed 10 orders/sec — always rate-limit with `MAX_ORDERS_PER_SEC = 8`
+- Assume `paper_trade=True` sandbox exists in Dhan SDK — no sandbox documented; use vectorbt
 
 ### When Generating New Modules
 
-1. Create the file under the correct `src/` subdirectory
+**Phase 1 scripts go in `scripts/<handle>.py` — not in `src/`.** Lower bar applies: no mandatory docstrings or type hints, no `if __name__ == "__main__"` required. Still required: `.NS` suffix on NSE tickers, no hardcoded credentials, `logging` not `print()`.
+
+For `src/` modules (Phase 3+):
+
+1. Create file under correct `src/` subdirectory
 2. Add module-level docstring: what it does, who owns it, phase it becomes active
 3. Add all functions with full docstrings and type hints
-4. Add `if __name__ == "__main__":` block with a minimal smoke test
-5. Update `requirements.txt` if new dependencies were added
+4. Add `if __name__ == "__main__":` block with minimal smoke test
+5. Update `requirements.txt` if new dependencies added
 
 ### When Generating Notebooks
 
-1. First cell: markdown with notebook title, purpose, author (role), and week number
+1. First cell: markdown with notebook title, purpose, author (role), week number
 2. Second cell: all imports
 3. Third cell: configuration (tickers, date range, parameters)
 4. Add markdown cells between code sections explaining what each section does
-5. Last cell: summary of findings in plain English (for the Docs role to copy to AppFlowy)
+5. Last cell: summary of findings in plain English (for Docs role to copy to Notion)
 
 ### When Suggesting Tools or Libraries
 
 Check this order before recommending:
 
-1. Is it already in `requirements.txt`? Use it.
-2. Is there a FOSS alternative to the paid tool being considered? Recommend the FOSS one.
-3. Does it require a C compiler to install? If yes, is there a pure-Python alternative? (e.g. `ta` over `TA-Lib`)
-4. Is it compatible with Python 3.12? Check before recommending.
+1. Already in `requirements.txt`? Use it.
+2. FOSS alternative to paid tool being considered? Recommend FOSS.
+3. Requires C compiler to install? Pure-Python alternative? (e.g. `ta` over `TA-Lib`)
+4. Compatible with Python 3.12? Check before recommending.
 
 ---
 
@@ -766,9 +938,9 @@ Check this order before recommending:
 
 - **Python SDK**: <https://github.com/dhan-oss/DhanHQ-py>
 - **API Docs**: <https://dhanhq.co/docs/v2/>
-- **Rate limit**: 25 orders/second
+- **Rate limit**: 10 orders/second (SEBI/NSE hard cap — never exceed)
 - **Token refresh**: Every **24 hours** (SEBI hard cap) — manual, from Dhan profile
-- **Paper trading**: Supported natively — use `dhan.place_order()` with `paper_trade=True` in Phase 4
+- **Paper trading**: No sandbox in Dhan SDK. Use vectorbt `Portfolio.from_signals()` for simulation.
 
 ## 19. External Resources (Pinned)
 
@@ -787,20 +959,20 @@ Check this order before recommending:
 
 ---
 
-*Last updated: Week 1, Phase 0. Update this file whenever architecture, team, or decisions change.*
+*Last updated: Week 4, Phase 2 (4 June 2026). Update when architecture, team, or decisions change.*
 *Owner: RS (Project Lead). Changes via PR — do not edit directly on main.*
 
 ---
 
 ## 20. External Documentation & Constraints
 
-This section is the authoritative reference for Claude Code. When generating code for QuantIQ, always consult the relevant docs below before producing any implementation. Constraints listed here are non-negotiable.
+Authoritative reference for Claude Code. When generating code for QuantIQ, always consult relevant docs below before producing any implementation. Constraints listed here are non-negotiable.
 
 ---
 
 ### 20.1 Broker Integration — DhanHQ
 
-- **SDK:** `dhanhq==2.1.x` (pin exactly). v2.2.0 has breaking import changes — do not upgrade without checking <https://github.com/dhan-oss/DhanHQ-py/releases>
+- **SDK:** `dhanhq==2.0.2` (pin exactly). v2.2.0 has breaking import changes — do not upgrade without checking <https://github.com/dhan-oss/DhanHQ-py/releases>
 - **API Docs v2:** <https://dhanhq.co/docs/v2/>
 - **Orders reference:** <https://dhanhq.co/docs/v2/orders/>
 - **Market Quote / LTP:** <https://dhanhq.co/docs/v2/market-quote/>
@@ -810,11 +982,11 @@ This section is the authoritative reference for Claude Code. When generating cod
 
 **Hard constraints — never violate:**
 
-1. Access tokens are valid for **24 hours only** (SEBI mandate). The bot must regenerate the token daily before 9:15 AM IST market open. Never document or assume 30-day or permanent token validity.
-2. Order rate limit: **≤10 orders/second/exchange/client**. Never generate code that exceeds this without explicit rate-limiting.
+1. Access tokens valid **24 hours only** (SEBI mandate). Bot must regenerate daily before 9:15 AM IST. Never document or assume 30-day or permanent token validity.
+2. Order rate limit: **≤10 orders/second/exchange/client**. Never generate code exceeding this without explicit rate-limiting.
 3. All order placement must log: timestamp, symbol, order type, quantity, price, order ID, response status.
-4. Static-IP whitelisting is mandatory (SEBI Feb 2025 circular). Use `DhanLogin.set_ip()` / `modify_ip()` / `get_ip()` from the SDK.
-5. DhanHQ has **no documented paper-trading sandbox**. Never generate code that assumes a sandbox endpoint exists. Use vectorbt `Portfolio.from_signals()` for paper simulation.
+4. Static-IP whitelisting mandatory (SEBI Feb 2025 circular). Use `DhanLogin.set_ip()` / `modify_ip()` / `get_ip()` from SDK.
+5. DhanHQ has **no documented paper-trading sandbox**. Never generate code assuming sandbox endpoint exists. Use vectorbt `Portfolio.from_signals()` for paper simulation.
 6. Security IDs are **integers** (e.g. `1333` = HDFC Bank NSE_EQ). Never use ISIN strings with `quote_data` / `ohlc_data` / `ticker_data`. Find IDs via `dhan.fetch_security_list("compact")`.
 
 **Confirmed SDK methods (dhanhq v2.x):**
@@ -853,8 +1025,8 @@ dhan.get_order_list()
 
 **Hard constraints:**
 
-1. All NSE tickers must be suffixed `.NS` (e.g. `RELIANCE.NS`, `INFY.NS`). BSE tickers use `.BO`. Never fetch an unsuffixed Indian ticker — it silently returns US equity data.
-2. Always validate ticker suffix at the data-layer entry point before passing to yfinance.
+1. All NSE tickers must be suffixed `.NS` (e.g. `RELIANCE.NS`, `INFY.NS`). BSE tickers use `.BO`. Never fetch unsuffixed Indian ticker — silently returns US equity data.
+2. Always validate ticker suffix at data-layer entry point before passing to yfinance.
 
 **Correct usage:**
 
@@ -883,7 +1055,7 @@ Intraday intervals available for last 60 days only. yfinance is unofficial — Y
 - **API reference:** <https://technical-analysis-library-in-python.readthedocs.io/en/latest/ta.html>
 - **GitHub:** <https://github.com/bukosabino/ta>
 
-**Hard constraint:** `ta` does NOT include a daily VWAP. When VWAP is required, implement manually:
+**Hard constraint:** `ta` does NOT include daily VWAP. When VWAP required, implement manually:
 
 ```python
 # VWAP — manual implementation, do NOT rely on ta.volume.VolumeWeightedAveragePrice for daily VWAP
@@ -929,8 +1101,8 @@ df.dropna(inplace=True)  # always after rolling ops, before backtest
 
 **Hard constraints:**
 
-1. Use **open-source vectorbt only** — pin `vectorbt==0.28.2`. Do NOT write `vectorbt>=1.0` — v1.x is the paid VectorBT PRO product and will fail to install on the free tier.
-2. Python compatibility: `>=3.11,<3.13`. Do not generate code or CI configs targeting Python 3.13+ until Numba wheel availability is confirmed.
+1. Use `vectorbt==1.0.0` — pin exactly. v1.0.0 is open-source (went free in 2025). Do not upgrade without testing Numba compatibility.
+2. Python compatibility: `>=3.11,<3.13`. Do not generate code or CI configs targeting Python 3.13+ until Numba wheel availability confirmed.
 
 **Correct usage:**
 
@@ -965,7 +1137,7 @@ print(pf.stats())            # full summary table
 
 1. Store `DHAN_CLIENT_ID` and `DHAN_ACCESS_TOKEN` in `.streamlit/secrets.toml` locally. Never hardcode credentials.
 2. `.streamlit/secrets.toml` must be in `.gitignore`. Never commit it.
-3. For Streamlit Community Cloud deployment, credentials are pasted into "Advanced settings → Secrets" — never stored in the repo.
+3. For Streamlit Community Cloud deployment, credentials pasted into "Advanced settings → Secrets" — never stored in repo.
 
 ---
 
@@ -975,7 +1147,7 @@ print(pf.stats())            # full summary table
 - **API reference:** <https://plotly.com/python-api-reference/>
 - **Figure reference:** <https://plotly.com/python/reference/>
 
-Always use Plotly over matplotlib. Interactive charts are a project requirement.
+Always use Plotly over matplotlib. Interactive charts are project requirement.
 
 ---
 
@@ -993,7 +1165,7 @@ Always use Plotly over matplotlib. Interactive charts are a project requirement.
 - **GitHub / Docs:** <https://github.com/theskumar/python-dotenv>
 - **Version:** `python-dotenv==1.2.2`, requires Python `>=3.10`
 
-**Hard constraint:** Never generate code that reads API credentials directly from environment without `load_dotenv()` or Streamlit secrets.
+**Hard constraint:** Never generate code reading API credentials from environment without `load_dotenv()` or Streamlit secrets.
 
 ---
 
@@ -1018,10 +1190,10 @@ Use Google-style docstrings exclusively (`Args:`, `Returns:`, `Raises:`).
 
 **Hard constraints for Phase 4 bot:**
 
-1. Order rate: ≤10 orders/sec. Never generate a loop that can exceed this.
+1. Order rate: ≤10 orders/sec. Never generate loop that can exceed this.
 2. Daily session logout must be implemented — no persistent session across trading days.
 3. All algo activity must be audit-logged with ≥5-year retention capability (file rotation acceptable; use Python `logging` with `TimedRotatingFileHandler`).
-4. Static-IP whitelisting must be set via DhanHQ SDK before any live order is placed.
+4. Static-IP whitelisting must be set via DhanHQ SDK before any live order placed.
 
 ---
 
@@ -1030,5 +1202,4 @@ Use Google-style docstrings exclusively (`Args:`, `Returns:`, `Raises:`).
 - **Conventional Commits:** <https://www.conventionalcommits.org/en/v1.0.0/>
 - **Semantic Versioning:** <https://semver.org/>
 
-When generating commit messages, branch names, or PR templates, always follow Conventional Commits format:
-`<type>(<scope>): <description>` — e.g. `feat(data): add NSE ticker validator`
+When generating commit messages, branch names, or PR templates, always follow Conventional Commits format: `<type>(<scope>): <description>` — e.g. `feat(data): add NSE ticker validator`

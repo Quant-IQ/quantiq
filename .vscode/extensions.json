@@ -1,0 +1,24 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "KevinRose.vsc-python-indent",
+        "njpwerner.autodocstring",
+
+        "ms-toolsai.jupyter",
+        "ms-toolsai.jupyter-keymap",
+
+        "mikestead.dotenv",
+        "mechatroner.rainbow-csv",
+        "tamasfe.even-better-toml",
+        "RandomFractalsInc.vscode-streamlit-snippets",
+        "yzhang.markdown-all-in-one",
+
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+        "GitHub.vscode-pull-request-github",
+
+        "xyz.local-history"
+    ]
+}
