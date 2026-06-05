@@ -376,14 +376,14 @@ Labels: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-lead`, 
 
 ### Phase Map
 
-| Phase | Weeks | Core Deliverable                                           | Status      |
-| ----- | ----- | ---------------------------------------------------------- | ----------- |
-| 0     | 1     | Every member: first commit (`members/name.md`)             | Complete    |
-| 1     | 2–4   | `scripts/<handle>.py` — fetch NSE data, SMA20/50 stats     | Complete    |
-| 2     | 5–7   | `notebooks/market_analysis.ipynb` — group NIFTY50 analysis | Active      |
-| 3     | 8–9   | `backtest/strategy_v1.ipynb` — Sharpe, drawdown, win rate  | Not started |
-| 4     | 10–11 | Live bot — paper trading across 3+ sessions via Dhan API   | Not started |
-| 5     | 12    | Public repo — clean code, full README, Streamlit deployed  | Not started |
+| Phase | Weeks  | Due Date    | Core Deliverable                                           | Status      |
+| ----- | ------ | ----------- | ---------------------------------------------------------- | ----------- |
+| 0     | 1      | —           | Every member: first commit (`members/name.md`)             | Complete    |
+| 1     | 2–4    | —           | `scripts/<handle>.py` — fetch NSE data, SMA20/50 stats     | Complete    |
+| 2     | 4–5    | 14 Jun 2026 | `notebooks/market_analysis.ipynb` — group NIFTY50 analysis | Active      |
+| 3     | 6–8    | 5 Jul 2026  | `src/` build — data, screener, watchlists, strategy        | Not started |
+| 4     | 9–10   | 19 Jul 2026 | Execution layer + paper trading via Dhan API               | Not started |
+| 5     | 11–12  | 2 Aug 2026  | Dashboard, deploy, public repo, full README                | Not started |
 
 ### Current Phase: Phase 2 — Market Analysis (Week 4, started 1 June 2026)
 
@@ -606,7 +606,7 @@ Legend: ✅ full  🔧 basic  🔨 very basic  🔜 v0.0.2
 | D7 | Fundamental data fetcher | ✅ |
 | D8 | Financial statement scraper | 🔨 very basic |
 | D9 | Stock universe manager | 🔧 basic |
-| D10 | Data pipeline scheduler | 🔧 basic |
+| D10 | Data pipeline scheduler | 🔜 v0.0.2 |
 
 **Screener**
 | ID | Task | Version |
@@ -647,7 +647,7 @@ Legend: ✅ full  🔧 basic  🔨 very basic  🔜 v0.0.2
 |----|------|---------|
 | B1 | Backtest engine (vectorbt) | ✅ |
 | B2 | Backtest metrics (Sharpe, drawdown, win rate, Calmar) | ✅ |
-| B3 | Cost model (brokerage, slippage, STT) | 🔜 v0.0.2 (not useful with paper trading) |
+| B3 | Cost model (brokerage, slippage, STT) | 🔧 basic |
 | B4 | Paper trade execution (signal log to CSV) | ✅ |
 | B5 | Live trade execution (Dhan `place_order`) | 🔜 v0.0.2 |
 | B6 | Order manager | 🔜 v0.0.2 |
@@ -959,7 +959,7 @@ Check this order before recommending:
 
 ---
 
-*Last updated: Week 4, Phase 2 (4 June 2026). Update when architecture, team, or decisions change.*
+*Last updated: Week 4, Phase 2 (5 June 2026). Update when architecture, team, or decisions change.*
 *Owner: RS (Project Lead). Changes via PR — do not edit directly on main.*
 
 ---
