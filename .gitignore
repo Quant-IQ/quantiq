@@ -224,3 +224,6 @@ __marimo__/
 
 # Temp files
 temp/
+cache/
+watchlists/
+__pycache__/
