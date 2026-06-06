@@ -23,21 +23,20 @@ QuantIQ is a collaborative 12-week project to build a working paper-trading bot 
 
 Phase 1 roles assigned 17 May 2026. Reviewed again at end of Phase 1. P = primary, S = secondary.
 
-| Name | Role                                         | Status          |
-| :--- | :------------------------------------------- | :-------------- |
-| RS   | Project Lead                                 | Active          |
-| EB   | Analyst / Docs (P) \| Dev / Infra (S)        | Active          |
-| GT   | Quant / Strategy (P) \| Analyst / Docs (S)   | Active          |
-| AV   | Quant / Strategy (P) \| Data Engineering (S) | Active          |
-| AR   | Data Engineering (P) \| Dev / Infra (S)      | Active          |
-| RT   | Quant / Strategy (P) \| Dev / Infra (S)      | Active          |
-| NS   | Dev / Infra (P) \| Data Engineering (S)      | Active          |
-| AJ   | Data Engineering (P) \| Quant / Strategy (S) | Active          |
-| SS   | Quant / Strategy (P) \| Analyst / Docs (S)   | Active          |
-| SmS  | Data Engineering (P) \| Analyst / Docs (S)   | Active          |
-| AK   | Dev / Infra (P) \| Data Engineering (S)      | Active          |
-| ShS  | Analyst / Docs (P) \| Dev / Infra (S)        | Active          |
-
+| Name | Role                                                  | Status |
+| :--- | :-----------------------------------------------------| :----- |
+| RS   | Project Lead                                          | Active |
+| GT   | Co-Lead \| Quant / Strategy (P) \| Analyst / Docs (S) | Active |
+| EB   | Analyst / Docs (P) \| Dev / Infra (S)                 | Active |
+| AV   | Quant / Strategy (P) \| Data Engineering (S)          | Active |
+| AR   | Dev / Infra (P) \| Data Engineering (S)               | Active |
+| RT   | Quant / Strategy (P) \| Dev / Infra (S)               | Active |
+| NS   | Dev / Infra (P) \| Data Engineering (S)               | Active |
+| AJ   | Data Engineering (P) \| Quant / Strategy (S)          | Active |
+| SS   | Quant / Strategy (P) \| Analyst / Docs (S)            | Active |
+| SmS  | Data Engineering (P) \| Analyst / Docs (S)            | Active |
+| AK   | Dev / Infra (P) \| Data Engineering (S)               | Active |
+| ShS  | Analyst / Docs (P) \| Dev / Infra (S)                 | Active |
 _Roles reviewed end of Phase 1 / start of Phase 2._
 
 ---
