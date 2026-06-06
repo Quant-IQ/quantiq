@@ -37,6 +37,7 @@ Phase 1 roles assigned 17 May 2026. Reviewed again at end of Phase 1. P = primar
 | SmS  | Data Engineering (P) \| Analyst / Docs (S)            | Active |
 | AK   | Dev / Infra (P) \| Data Engineering (S)               | Active |
 | ShS  | Analyst / Docs (P) \| Dev / Infra (S)                 | Active |
+
 _Roles reviewed end of Phase 1 / start of Phase 2._
 
 ---
