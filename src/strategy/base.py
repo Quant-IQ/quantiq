@@ -7,11 +7,6 @@ Phase: Phase 3 Activation target
 """
 
 import os
-import sys
-
-# Force Python to recognize the absolute project root directory structure dynamically
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
 from abc import ABC, abstractmethod
 from typing import List
 
