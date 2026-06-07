@@ -361,6 +361,35 @@ chore: pin dependency versions in requirements.txt
 9. Reviewer must post within **48 hours** of assignment — post in #dev if unable
 10. Reviewer uses **Squash and merge** — enables auto-delete of head branch
 
+### PR Description Template
+
+Every PR must use this template. Use `/quantiq-pr-description` to generate it automatically.
+
+```markdown
+## What does this PR do?
+<!-- One or two sentences. What changed and why. -->
+
+## How to test it
+<!-- Steps to verify: e.g. "run python src/data/fetch.py — should print OHLCV table" -->
+
+## Screenshots / Output
+<!-- Paste a terminal output, chart screenshot, or test result if relevant. -->
+
+## Checklist
+- [ ] My code runs without errors locally
+- [ ] I have added docstrings to all new functions
+- [ ] No API tokens, .env values, or hardcoded paths in this PR
+- [ ] Variable names are clear and descriptive (no x, temp, stuff)
+- [ ] I have pulled latest main and resolved any conflicts
+- [ ] I have linked the related Issue below
+
+## Related Issue
+Closes #[Issue number]
+
+## Notes for reviewer
+<!-- Anything you want the reviewer to pay special attention to. -->
+```
+
 ### Issue Structure
 
 Every task lives as GitHub Issue. Use provided templates:
