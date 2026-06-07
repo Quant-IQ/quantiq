@@ -60,7 +60,9 @@ def _is_stale(path: Path, interval: str) -> bool:
 	if not path.exists():
 		return True
 	age = datetime.now() - datetime.fromtimestamp(path.stat().st_mtime)
-	threshold = timedelta(hours=1) if interval in _INTRADAY_INTERVALS else timedelta(days=1)
+	threshold = (
+		timedelta(hours=1) if interval in _INTRADAY_INTERVALS else timedelta(days=1)
+	)
 	return age > threshold
 
 
@@ -153,7 +155,10 @@ def fetch_ohlc(
 			df = pd.read_parquet(cache_file)
 			logger.info(
 				"Cache hit for %s (period=%s, interval=%s) — %d rows",
-				ticker, period, interval, len(df),
+				ticker,
+				period,
+				interval,
+				len(df),
 			)
 			return df
 		except Exception as e:
@@ -193,7 +198,10 @@ def fetch_ohlc(
 
 	logger.info(
 		"Fetched %d rows for %s (period=%s, interval=%s)",
-		len(df), ticker, period, interval,
+		len(df),
+		ticker,
+		period,
+		interval,
 	)
 	return df
 
@@ -289,7 +297,6 @@ def fetch_batch(
 				interval=interval,
 				auto_adjust=True,
 				progress=False,
-				group_by="ticker",
 			)
 	except Exception as e:
 		logger.error("yfinance batch download failed: %s", e)
@@ -299,15 +306,19 @@ def fetch_batch(
 
 	for ticker in misses:
 		try:
+			if raw is None:
+				result[ticker] = None
+				continue
+
 			if len(misses) == 1:
-				df_raw = raw
+				df_raw: pd.DataFrame = raw  # type: ignore[assignment]
 			else:
-				top_level = raw.columns.get_level_values(0)
-				if ticker not in top_level:
+				ticker_level = raw.columns.get_level_values(1)
+				if ticker not in ticker_level:
 					logger.warning("Ticker %s absent from batch result", ticker)
 					result[ticker] = None
 					continue
-				df_raw = raw[ticker]
+				df_raw = raw.xs(ticker, axis=1, level=1)  # type: ignore[assignment]
 
 			if df_raw is None or df_raw.empty:
 				logger.warning("Empty result for %s in batch download", ticker)
@@ -332,7 +343,7 @@ def fetch_batch(
 				except Exception as e:
 					logger.warning("Cache write failed for %s: %s", ticker, e)
 
-			result[ticker] = df
+			result[ticker] = df  # type: ignore[assignment]
 			logger.info("Fetched %d rows for %s", len(df), ticker)
 
 		except Exception as e:
