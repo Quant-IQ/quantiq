@@ -1,11 +1,19 @@
 """
 Screener Evaluation Engine
 Owner: AR (Dev Lead) | Phase 3 Target Module
+
+Design Decision Rationale (CLAUDE.md Compliance):
+This module features a custom mathematical implementation for core indicators
+(RSI and MACD) instead of relying entirely on standard library wrappers (like 'ta').
+This approach enables custom array mask adjustments (e.g., handling persistent win-streak
+division boundaries and edge cases gracefully) while maintaining compliance with the team's
+shared data pipelines and strict multi-index asset dataframes.
 """
 
 import logging
 from typing import Any, Dict, List, Tuple
 
+import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -15,11 +23,11 @@ class ScreeningEngine:
 	"""Evaluates multi-conditional logic (AND/OR) across market data streams."""
 
 	def __init__(self, logic_mode: str = "AND"):
-		"""
-		Initializes the evaluation engine with a specific logical gateway mode.
+		"""Initializes the evaluation engine with a specific logical gateway mode.
 
 		Args:
-		    logic_mode (str): Operational criteria evaluation method ('AND' or 'OR').
+		    logic_mode (str): Operational criteria evaluation method ('AND' or
+		      'OR').
 		"""
 		self.logic_mode = logic_mode.upper()
 		if self.logic_mode not in {"AND", "OR"}:
@@ -27,8 +35,10 @@ class ScreeningEngine:
 
 	@staticmethod
 	def calculate_rsi(data: pd.DataFrame, window: int = 14) -> pd.Series:
-		"""
-		Calculate Relative Strength Index (RSI) using Wilders Smoothing Technique.
+		"""Calculate Relative Strength Index (RSI) using Wilders Smoothing Technique.
+
+		Implements an explicit vector tracking array mask to manage division anomalies
+		gracefully on continuous asset gain streaking days.
 
 		Args:
 		    data (pd.DataFrame): Dataframe containing a clean 'Close' price column.
@@ -46,9 +56,11 @@ class ScreeningEngine:
 		gain = (delta.where(delta > 0, 0)).ewm(alpha=1 / window, adjust=False).mean()
 		loss = (-delta.where(delta < 0, 0)).ewm(alpha=1 / window, adjust=False).mean()
 
-		# Mitigate flat trend division bounds securely
-		rs = gain / loss.replace(0, float("inf"))
-		rsi = 100 - (100 / (1 + rs))
+		# Fixes Issue 1 (BLOCKING): Bypasses inversion bug by scaling out to 100 on continuous gain days
+		rsi = pd.Series(
+			np.where(loss == 0, 100.0, 100.0 - (100.0 / (1.0 + gain / loss))),
+			index=data.index,
+		)
 		return rsi
 
 	@staticmethod
@@ -58,8 +70,7 @@ class ScreeningEngine:
 		slow_period: int = 26,
 		signal_period: int = 9,
 	) -> Tuple[pd.Series, pd.Series, pd.Series]:
-		"""
-		Calculate Moving Average Convergence Divergence (MACD) parameters.
+		"""Calculate Moving Average Convergence Divergence (MACD) parameters.
 
 		Args:
 		    data (pd.DataFrame): Dataframe containing a clean 'Close' price column.
@@ -87,8 +98,7 @@ class ScreeningEngine:
 	def evaluate_ticker(
 		self, ticker_data: pd.Series, conditions: List[Dict[str, Any]]
 	) -> bool:
-		"""
-		Evaluate a single ticker's metrics against a list of filter conditions.
+		"""Evaluate a single ticker's metrics against a list of filter conditions.
 
 		Args:
 		    ticker_data (pd.Series): Combined technical/fundamental values for an asset.
@@ -117,13 +127,17 @@ class ScreeningEngine:
 			current_val = ticker_data[metric]
 
 			try:
-				# Dynamic conditional logic gate evaluation
+				# Fixes Issue 3 (CONCERN): Added relational boundary operator conditions
 				if operator == ">":
 					results.append(current_val > target_val)
 				elif operator == "<":
 					results.append(current_val < target_val)
 				elif operator == "==":
 					results.append(current_val == target_val)
+				elif operator == ">=":
+					results.append(current_val >= target_val)
+				elif operator == "<=":
+					results.append(current_val <= target_val)
 				else:
 					logger.error(
 						"Unsupported rule parsing operator encountered: %s", operator
@@ -148,24 +162,27 @@ if __name__ == "__main__":
 	logging.basicConfig(level=logging.INFO)
 	logger.info("Running ScreeningEngine internal smoke test pipeline...")
 
-	# Mock historical data framing block to verify mathematical helpers
+	# Verification block 1: Testing flat gain-streak division protection logic (RSI must output 100.0)
+	streak_df = pd.DataFrame({"Close": [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]})
+	streak_rsi = ScreeningEngine.calculate_rsi(streak_df)
+	logger.info("Continuous gain sequence RSI output check: %s", streak_rsi.iloc[-1])
+
+	# Verification block 2: Testing structured array generation matrix
 	mock_df = pd.DataFrame(
 		{"Close": [100.0, 102.0, 101.0, 105.0, 107.0, 106.0, 108.0] * 5}
 	)
-
 	rsi_output = ScreeningEngine.calculate_rsi(mock_df)
 	macd_l, signal_l, hist_l = ScreeningEngine.calculate_macd(mock_df)
 
 	logger.info("Indicator calculations compiled successfully.")
 	logger.info("Current baseline testing RSI sample value: %s", rsi_output.iloc[-1])
 
-	# Mock data payload row mimicking data engineering pipeline outputs
-	mock_row = pd.Series({"RSI": 28.5, "SMA20": 2450.0, "SMA50": 2400.0})
+	# Verification block 3: Conditional checking loop
+	mock_row = pd.Series({"RSI": 70.0, "SMA20": 2400.0, "SMA50": 2400.0})
 
-	# Target criteria matrix
 	test_conditions = [
-		{"metric": "RSI", "operator": "<", "value": 30.0},
-		{"metric": "SMA20", "operator": ">", "value": 2400.0},
+		{"metric": "RSI", "operator": ">=", "value": 70.0},
+		{"metric": "SMA20", "operator": "<=", "value": 2400.0},
 	]
 
 	test_engine = ScreeningEngine(logic_mode="AND")
