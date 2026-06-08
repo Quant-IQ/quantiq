@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 # MACD
 # ---------------------------------------------------------------------------
 
+
 def macd(
 	df: pd.DataFrame,
 	window_slow: int = 26,
@@ -111,9 +112,7 @@ def macd(
 
 	# Must be a DataFrame (not a Series, dict, etc.)
 	if not isinstance(df, pd.DataFrame):
-		logger.error(
-			"macd() expected pd.DataFrame, got %s", type(df).__name__
-		)
+		logger.error("macd() expected pd.DataFrame, got %s", type(df).__name__)
 		return None
 
 	# Must be non-empty
@@ -124,8 +123,7 @@ def macd(
 	# The target price column must exist
 	if column not in df.columns:
 		logger.error(
-			"macd() could not find column '%s' in DataFrame. "
-			"Available columns: %s",
+			"macd() could not find column '%s' in DataFrame. Available columns: %s",
 			column,
 			list(df.columns),
 		)
@@ -195,14 +193,12 @@ def macd(
 		)
 
 		# Append the three standard MACD columns
-		result["MACD"]        = macd_obj.macd()         # fast EMA − slow EMA
+		result["MACD"] = macd_obj.macd()  # fast EMA − slow EMA
 		result["MACD_signal"] = macd_obj.macd_signal()  # signal (trigger) line
-		result["MACD_diff"]   = macd_obj.macd_diff()    # histogram value
+		result["MACD_diff"] = macd_obj.macd_diff()  # histogram value
 
 	except Exception as e:
-		logger.error(
-			"macd() computation failed unexpectedly: %s", e, exc_info=True
-		)
+		logger.error("macd() computation failed unexpectedly: %s", e, exc_info=True)
 		return None
 
 	# ------------------------------------------------------------------
@@ -237,6 +233,93 @@ def macd(
 	)
 
 	return result
+
+
+"""
+Technical Analysis Indicators Module
+Contributors: AR (Dev Lead) | Data Team
+"""
+
+import logging
+import sys
+
+import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+
+def vwap(
+	high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series
+) -> pd.Series:
+	"""
+	Calculate the Volume Weighted Average Price (VWAP) for daily bars.
+
+	Uses a continuous rolling cumulative sum formulation to prevent day-boundary
+	breakdowns on standard historical daily datasets.
+
+	Args:
+	    high (pd.Series): Daily high price data vector.
+	    low (pd.Series): Daily low price data vector.
+	    close (pd.Series): Daily close price data vector.
+	    volume (pd.Series): Daily volume data vector.
+
+	Returns:
+	    pd.Series: Calculated VWAP tracking line with NaN indices dropped.
+
+	Raises:
+	    ValueError: If any input series lengths are mismatched or empty.
+	"""
+	# Defensive length validation checks
+	if not (len(high) == len(low) == len(close) == len(volume)):
+		logger.error("Input sequence vectors must possess identical lengths.")
+		raise ValueError("Series length mismatch encountered during calculation.")
+
+	if high.empty:
+		logger.warning("Empty data stream passed to VWAP module.")
+		return pd.Series(dtype="float64")
+
+	try:
+		# 1. Calculate Typical Price for the bar
+		typical_price = (high + low + close) / 3
+
+		# 2. Calculate the Price-Volume independent product vector
+		pv_product = typical_price * volume
+
+		# 3. Calculate running cumulative sums manually as per instructions
+		cumulative_pv = pv_product.cumsum()
+		cumulative_volume = volume.cumsum()
+
+		# 4. Generate the VWAP matrix curve baseline
+		# Replace 0 volume with infinity bounds to completely neutralize division anomalies
+		vwap_series = cumulative_pv / cumulative_volume.replace(0, float("inf"))
+
+		# 5. Rule enforcement: call dropna() immediately before returning
+		return vwap_series.dropna()
+
+	except Exception as e:
+		logger.error("Failed to compile custom mathematical VWAP engine array: %s", e)
+		raise
+
+
+if __name__ == "__main__":
+	# Internal Smoke Test / Sanity Check to fulfill issue acceptance criteria
+	logging.basicConfig(
+		level=logging.INFO,
+		format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+		handlers=[logging.StreamHandler(sys.stdout)],
+	)
+	logger.info("Initializing indicators.py manual VWAP smoke test script...")
+
+	# Instantiating mock tracking vectors
+	mock_high = pd.Series([105.0, 107.0, 110.0, 108.0, 112.0])
+	mock_low = pd.Series([100.0, 102.0, 105.0, 103.0, 107.0])
+	mock_close = pd.Series([103.0, 106.0, 107.0, 104.0, 110.0])
+	mock_volume = pd.Series([1000, 1500, 2000, 1200, 2500])
+
+	output_vwap = vwap(mock_high, mock_low, mock_close, mock_volume)
+
+	logger.info("VWAP Calculation Execution Complete.")
+	logger.info("Generated output series tail:\n%s", output_vwap.tail())
 
 
 # ---------------------------------------------------------------------------
@@ -274,8 +357,11 @@ if __name__ == "__main__":
 				result.shape,
 				list(result.columns),
 			)
-			logger.info("Last 3 rows:\n%s",
-				result[["Close", "MACD", "MACD_signal", "MACD_diff"]].tail(3).to_string()
+			logger.info(
+				"Last 3 rows:\n%s",
+				result[["Close", "MACD", "MACD_signal", "MACD_diff"]]
+				.tail(3)
+				.to_string(),
 			)
 		else:
 			logger.error("FAILED — macd() returned None on valid input")
@@ -316,13 +402,13 @@ if __name__ == "__main__":
 	logger.info("PASSED — returned None for None input")
 
 	# ---- Test 7: Custom parameters ----
-	logger.info("Test 7 — custom parameters (window_slow=20, window_fast=8, window_sign=6)")
+	logger.info(
+		"Test 7 — custom parameters (window_slow=20, window_fast=8, window_sign=6)"
+	)
 	if df is not None:
 		result_custom = macd(df, window_slow=20, window_fast=8, window_sign=6)
 		if result_custom is not None:
-			logger.info(
-				"PASSED — custom params shape: %s", result_custom.shape
-			)
+			logger.info("PASSED — custom params shape: %s", result_custom.shape)
 		else:
 			logger.error("FAILED — macd() returned None on custom valid params")
 
