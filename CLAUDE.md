@@ -361,6 +361,35 @@ chore: pin dependency versions in requirements.txt
 9. Reviewer must post within **48 hours** of assignment — post in #dev if unable
 10. Reviewer uses **Squash and merge** — enables auto-delete of head branch
 
+### PR Description Template
+
+Every PR must use this template. Use `/quantiq-pr-description` to generate it automatically.
+
+```markdown
+## What does this PR do?
+<!-- One or two sentences. What changed and why. -->
+
+## How to test it
+<!-- Steps to verify: e.g. "run python src/data/fetch.py — should print OHLCV table" -->
+
+## Screenshots / Output
+<!-- Paste a terminal output, chart screenshot, or test result if relevant. -->
+
+## Checklist
+- [ ] My code runs without errors locally
+- [ ] I have added docstrings to all new functions
+- [ ] No API tokens, .env values, or hardcoded paths in this PR
+- [ ] Variable names are clear and descriptive (no x, temp, stuff)
+- [ ] I have pulled latest main and resolved any conflicts
+- [ ] I have linked the related Issue below
+
+## Related Issue
+Closes #[Issue number]
+
+## Notes for reviewer
+<!-- Anything you want the reviewer to pay special attention to. -->
+```
+
 ### Issue Structure
 
 Every task lives as GitHub Issue. Use provided templates:
@@ -902,6 +931,67 @@ Apply to every interaction in this codebase. Read before generating any code.
 - Recommend paid tool when free equivalent exists and fits
 - Generate code that can exceed 10 orders/sec — always rate-limit with `MAX_ORDERS_PER_SEC = 8`
 - Assume `paper_trade=True` sandbox exists in Dhan SDK — no sandbox documented; use vectorbt
+- Make any changes to the GitHub repo (PRs, comments, merges, labels, issue updates) without explicit RS permission — always describe what needs to be done and let RS execute manually
+
+### GitHub Interaction Rules
+
+Claude Code must not interact with the GitHub repo directly. No `gh` commands that write state (create PR, post comment, merge, label, assign, close issue) unless RS explicitly says "go ahead and do it" in the same conversation turn.
+
+**Correct behaviour:**
+- Review a PR → write findings as markdown files in `temp/`, report back to RS
+- Identify what comment to post → show the text, let RS copy-paste it
+- Identify a branch to merge → say which branch and why, let RS do the merge
+
+**Why:** RS reviews all GitHub-facing communication before it goes public. Team members see everything posted to the repo. Claude posting directly bypasses that review step.
+
+### PR Review Output Format
+
+When reviewing a PR, write all findings to `d:\Work\quantiq\temp\` as markdown files. RS copy-pastes into GitHub manually.
+
+**File structure:**
+
+```
+temp/
+├── review_master.md          ← overall decision, scope violations, summary table
+└── review_<filename>.md      ← one file per changed file reviewed
+```
+
+**Naming:** `review_` + filename with `/` replaced by `_`. Example: `src/strategy/base.py` → `review_src_strategy_base_py.md`.
+
+**Per-file format:**
+
+```markdown
+# Review — `path/to/file.py`
+
+## Issue 1 — BLOCKING: short title
+[problem description]
+[code block showing problem]
+[code block showing fix]
+
+## Issue 2 — CONCERN: short title
+...
+
+## Issue 3 — MINOR: short title
+...
+```
+
+**Master file format:**
+
+```markdown
+# PR #N — Master Review Comment
+
+**Decision: Approve / Request Changes**
+
+[Overall summary — scope violations, structural blockers, recommended next steps]
+
+## File-level issues summary
+
+| File | Blockers | Concerns |
+|------|----------|----------|
+| ... | N | N |
+```
+
+Severity tags: `BLOCKING` (merge must not proceed), `CONCERN` (needs discussion before merge), `MINOR` (fix before merge or note for follow-up).
 
 ### When Generating New Modules
 
