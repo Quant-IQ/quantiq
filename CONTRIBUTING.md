@@ -12,14 +12,37 @@ First off, thank you for contributing to QuantIQ! Git is how we collaborate with
 
 **Branch naming:** `feature/description` | `fix/description` | `data/description` | `docs/description` | `backtest/description` | `members/your-name`
 
-**Commit format:** `type: short description` (max 50 chars, lowercase)
-Types: `feat` `fix` `data` `docs` `test` `refactor` `chore`
+**Commit format:** `type(scope): short description` (max 72 chars, lowercase)
+Types: `feat` `fix` `docs` `style` `refactor` `test` `build` `chore`
+Scopes: `data` `broker` `strategy` `backtest` `dashboard` `bot`
 
 **PR rules:** Fill template fully · Write "Closes #N" · Assign reviewer · Never merge your own PR · Address all comments before merging
 
 **Never commit:** `.env` files | API tokens | Hardcoded credentials | `logs/*.csv`
 
 **Questions?** Post in Discord **#dev**. Tag **@co-lead**/**@lead** if blocked for more than 24 hours.
+
+---
+
+## File Placement
+
+Put work in the right directory from the start — wrong location = PR blocked.
+
+| Phase | What | Where | File pattern |
+| ----- | ---- | ------ | ------------ |
+| 0 | Member intro file | `members/` | `<firstname>.md` |
+| 1 | Individual analysis scripts | `scripts/` | `<handle>.py` |
+| 2 | Group NIFTY50 analysis | `notebooks/` | `market_analysis.ipynb` |
+| 3 | Strategy backtest | `backtest/` | `strategy_v1.ipynb` |
+| 3+ | Production data pipeline | `src/data/` | `fetch.py`, `indicators.py`, `validate.py` |
+| 3+ | Signal generation | `src/strategy/` | `base.py`, `sma_crossover.py`, `signals.py` |
+| 4 | Live bot + order management | `src/execution/` | `dhan_client.py`, `order_manager.py`, etc. |
+| 5 | Dashboard | `src/dashboard/` | `app.py` |
+| All | Trade signal log (gitignored) | `logs/` | `trades.csv` |
+
+**Do not create files in `src/` before Phase 3** — use `scripts/` for Phase 1 exploration.
+`scripts/` has a lower bar than `src/`: no mandatory docstrings or type hints.
+Still required in `scripts/`: `.NS` suffix on NSE tickers, no hardcoded credentials, `logging` not `print()`.
 
 ---
 
@@ -44,7 +67,7 @@ git add .                   # stage everything
 git add -p                  # stage chunks interactively (recommended for mixed changes)
 
 # Step 5 — Commit with a clear message
-git commit -m "feat: add SMA-20 to data pipeline"
+git commit -m "feat(data): add SMA-20 to data pipeline"
 
 # Step 6 — Push your branch to GitHub
 git push origin feature/your-feature-name
@@ -71,10 +94,12 @@ git push origin feature/your-feature-name
 
 ## Commit Message Standards
 
-**Format:** `type: short description` (max 50 chars, lowercase, no full stop).
+Follows [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/).
+
+**Format:** `type(scope): short description` (max 72 chars, lowercase, no full stop).
 
 ```text
-type: short description
+type(scope): short description
 
 # Optional body — explain WHY, not WHAT (the diff already shows what)
 Added EMA because SMA reacted too slowly during volatile sessions.
@@ -85,19 +110,27 @@ Closes #14
 
 * `feat`: New feature or function
 * `fix`: Bug fix
-* `data`: Data pipeline changes
 * `docs`: Documentation only
-* `test`: Adding or updating tests
+* `style`: Formatting, no logic change
 * `refactor`: Code restructure, no behaviour change
-* `chore`: Config, deps, .gitignore
+* `test`: Adding or updating tests
+* `build`: Dependency or build system changes
+* `chore`: Config, .gitignore, maintenance
+
+### Scopes
+
+Use one of these scopes to show which area is affected:
+`data` | `broker` | `strategy` | `backtest` | `dashboard` | `bot`
+
+Omit scope only for repo-wide changes (e.g. `docs: update README`).
 
 ### Good vs. Bad Commits
 
 | Status | Example |
 | --- | --- |
-| ✅ **GOOD** | `feat: add SMA-20 and SMA-50 overlay to chart` |
+| ✅ **GOOD** | `feat(strategy): add SMA-20 and SMA-50 overlay to chart` |
 | ❌ **BAD** | `update` |
-| ✅ **GOOD** | `fix: handle KeyError when ticker has no NSE data` |
+| ✅ **GOOD** | `fix(data): handle KeyError when ticker has no NSE data` |
 | ❌ **BAD** | `fixed stuff` |
 | ✅ **GOOD** | `chore: pin pandas to 2.1.0 for vectorbt compat` |
 | ❌ **BAD** | `asdfgh` |
