@@ -1,6 +1,7 @@
 # CLAUDE.md — QuantIQ Project Context
 
 > Read full at session start. Authoritative reference for architecture, conventions, team structure, AI behaviour rules. Don't infer from codebase alone — explains intent, not just structure.
+> **Session start checklist:** (1) Read `.claude/todo.md` for open tasks. (2) Read relevant memory files. (3) Check GitHub for open/closed issues relevant to current phase. (4) Report open items to RS before asking what to work on. At session end: update `.claude/todo.md`.
 
 ---
 
@@ -416,30 +417,152 @@ Labels: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-lead`, 
 
 ### Current Phase: Phase 2 — Market Analysis (Week 4, started 1 June 2026)
 
-Phase 2 deliverable: `notebooks/market_analysis.ipynb` — group NIFTY50 analysis. Phase 2 sync held **1 June 2026**. Sub-team leads and Co-Lead confirmed at sync.
+Phase 2 deliverable: `notebooks/market_analysis.ipynb` — group NIFTY50 analysis. Phase 2 sync held **1 June 2026**. Sub-team leads and Co-Lead confirmed at sync. Deadline: **14 Jun 2026**.
 
-**Active tasks this week (Week 4 — 4 June 2026):**
+### GitHub Issues Snapshot — 7 Jun 2026: 197 total | 101 open | 96 closed
 
-- All members: post standup in Discord `#standup` (anytime this week, hard deadline Sunday night)
-- **RS** — stock: `TVS.NS` | merge `fetch.py` v1 PR; spec `indicators.py` interface with AV; write fundamental framework spec
-- **GT** — stock: `M&M.NS` | co-lead check-ins; spec `src/data/visualise.py` for AR to implement; co-build `validate.py` with AR
-- **AV** — stock: `TCS.NS` | own RSI + MACD (#24); spec `indicators.py` interface with RS; coordinate notebook section PRs
-- **AR** — stock: `HDFCBANK.NS` | implement `visualise.py` from GT spec; co-build `validate.py` with GT; supplement `indicators.py` with RS
-- **SmS** — stock: `APOLLOMICRO.NS` | complete notebook section once skeleton merged
-- **EB** — stock: `ICICIBANK.NS` | Phase 1 retrospective in Notion; begin Phase 2 weekly log; doc quality pass on `fetch.py`
-- **RT** — stock: `LT.NS` | support AV on notebook section coordination
-- **AJ** — stock: `RELIANCE.NS` | contribute notebook section once skeleton merged
-- **AK** — stock: `INFY.NS` | contribute notebook section once skeleton merged
-- **NS** — stock: `TITAN.NS` | contribute notebook section once skeleton merged
-- **SS** — stock: `HCLTECH.NS` | contribute notebook section once skeleton merged
-- **ShS** — stock: `AXISBANK.NS` | contribute notebook section once skeleton merged
+### Open Issues — Phase 2 (27 open)
+
+| # | Title | Assignee | Notes |
+| --- | ----- | -------- | ----- |
+| 21 | [PHASE-2] Learn pandas fundamentals | RS | |
+| 23 | [PHASE-2] Add SMA and EMA indicators | RS | |
+| 25 | [PHASE-2] Build plotly candlestick chart | GT | |
+| 26 | [PHASE-2] Contribute section to market_analysis.ipynb | RS | |
+| 27 | [PHASE-2] Add correlation heatmap to notebook | RT | section 13 |
+| 28 | [PHASE-2] Write Notion log — Weeks 4 & 5 | unassigned | |
+| 29 | [PHASE-2] Update README — Phase 2 progress | unassigned | |
+| 30 | [PHASE-2] Learn Streamlit basics | unassigned | |
+| 114 | Pandas/RS | RS | |
+| 115 | [PHASE-2] Add SMA indicators | RS | |
+| 116 | [PHASE-2] Add EMA indicators | AV | |
+| 117 | SMA/RS | RS | |
+| 118 | Plotly/GT | GT | |
+| 119 | EMA/AV | AV | |
+| 121 | Analysis/RS | RS | |
+| 122 | Correlation\RT | unassigned | ⚠ should be RS+GT |
+| 124 | README/EB | EB | |
+| 125 | [PHASE-2] Week5 Notion/ShS | ShS | |
+| 126 | [PHASE-2] Varsity Module 2/SS | SS | |
+| 127 | [PHASE-2] Add RSI indicators | RT | |
+| 128 | [PHASE-2] Add MACD indicator | AV | |
+| 190 | [PHASE-2] Analysis/GT | GT | |
+| 191 | [PHASE-2] Pandas/SS | SS | |
+| 192 | [PHASE-2] SMA/SS | SS | |
+| 196 | [PHASE-2] README/ShS | ShS | |
+| 261 | RSI/RT | unassigned | ⚠ RT's notebook section |
+| 265 | RSI/SS | SS | |
+
+### Open Issues — Phase 3 Backlog (35 open)
+
+| # | Title | Assignee |
+| --- | ----- | -------- |
+| 31 | Write strategy spec document | GT |
+| 32 | Implement SMA crossover strategy | GT |
+| 34 | Run backtest with vectorbt | AV |
+| 35 | Add realistic costs to backtest | AV |
+| 36 | Document backtest results | EB |
+| 37 | Update README — backtest results | EB |
+| 38 | Write Decisions Log — strategy choices | RS |
+| 200 | indicators.py — EMA, RSI, MACD, ATR, VWAP | AV |
+| 201 | validate.py — gap detection, holiday handling, bad ticks | GT |
+| 202 | ticker_map.py — NIFTY50 name→yfinance+DhanID | RS |
+| 203 | visualise.py — interactive chart helpers | GT |
+| 204 | screener/engine.py — AND/OR filter composition | AR |
+| 205 | screener/runner.py — load config, fetch, run engine | AR |
+| 206 | screener/config.py — ScreenerConfig dataclass | GT |
+| 207 | screener/cache.py — JSON cache keyed by config+date | SmS |
+| 208 | screener/filters — technical and fundamental | AV |
+| 209 | watchlist system — static, dynamic, persistence | AR |
+| 210 | strategy/base.py and signals.py — ABC and Signal dataclass | AV |
+| 211 | strategy/rsi_mean_reversion.py | AV |
+| 212 | strategy/runner.py — run strategy against tickers | GT |
+| 221 | {PHASE-3} EMA indicator/AV | AV |
+| 222 | {PHASE-3} RSI indicator/AV | AV |
+| 223 | {PHASE-3} MACD indicator/AV | AV |
+| 224 | {PHASE-3} ATR indicator/AV | AV |
+| 225 | {PHASE-3} VWAP indicator/AV | AV |
+| 226 | {PHASE-3} holiday_calendar/GT | GT |
+| 227 | {PHASE-3} gap_detection/AR | AR |
+| 228 | {PHASE-3} bad_tick_filter/AR | AR |
+| 229 | {PHASE-3} stale_data_check/AR | AR |
+| 230 | {PHASE-3} candlestick_ema/AR | AR |
+| 231 | {PHASE-3} macd_subplot/AR | AR |
+| 232 | {PHASE-3} rsi_subplot/AR | AR |
+| 233 | {PHASE-3} volume_chart/AR | AR |
+| 234 | {PHASE-3} technical_filters/AV | AV |
+| 235 | {PHASE-3} fundamental_filters/AV | AV |
+| 236 | {PHASE-3} strategy_base/GT | GT |
+| 237 | {PHASE-3} signals_dataclass/AV | AV |
+| 238 | {PHASE-3} static_watchlist/SmS | SmS |
+| 239 | {PHASE-3} dynamic_watchlist/SmS | SmS |
+| 240 | {PHASE-3} watchlist_persistence/SmS | SmS |
+| 241 | {PHASE-3} watchlist_manager/AR | AR |
+| 263 | SMA/GT | GT |
+
+### Open Issues — Phase 4 Backlog (13 open)
+
+| # | Title | Assignee |
+| --- | ----- | -------- |
+| 39 | Open Dhan account + generate API token | unassigned |
+| 40 | Dhan API authentication | unassigned |
+| 41 | Build WebSocket live tick connection | unassigned |
+| 42 | Build signal execution loop | unassigned |
+| 43 | Build trade log (CSV) | unassigned |
+| 44 | Discord webhook alert on signal | unassigned |
+| 45 | Run 3 live paper trading sessions | unassigned |
+| 46 | Build Streamlit dashboard | unassigned |
+| 47 | Validate live signals vs backtest | unassigned |
+| 48 | Write Notion log — Weeks 10 & 11 | unassigned |
+| 213 | dhan_client.py — authenticated Dhan wrapper + rate limit | AR |
+| 214 | websocket_feed.py — live tick feed with auto-reconnect | AR |
+| 215 | logger.py — paper trade signal log to CSV | AR |
+| 216 | order_manager.py — v0.0.2 scaffold | AR |
+| 217 | integration test scaffold — end-to-end signal pipeline | RS |
+
+### Open Issues — Phase 5 Backlog (16 open)
+
+| # | Title | Assignee |
+| --- | ----- | -------- |
+| 49 | Final code clean-up — add all docstrings | unassigned |
+| 50 | Final README — all sections complete | unassigned |
+| 51 | Deploy Streamlit dashboard | unassigned |
+| 52 | Run public repo checklist | RS |
+| 53 | Record 2-minute demo video | unassigned |
+| 54 | Write LinkedIn wrap post draft | unassigned |
+| 55 | Notion final project summary | unassigned |
+| 218 | dashboard/app.py — 5-page Streamlit skeleton | EB |
+| 219 | docs/architecture.md — full system diagram | EB |
+| 220 | Streamlit Cloud deploy + public repo checklist | RS |
+| 242 | {PHASE-5} screener_page/EB | EB |
+| 243 | {PHASE-5} watchlists_page/EB | EB |
+| 244 | {PHASE-5} strategy_page/EB | EB |
+| 245 | {PHASE-5} backtest_page/EB | EB |
+| 246 | {PHASE-5} live_feed_page/EB | EB |
+| 247 | {PHASE-5} streamlit_deploy/EB | EB |
+| 248 | {PHASE-5} public_repo_checklist/RS | RS |
+
+### Closed Issues — Summary (96 closed)
+
+| Phase | Count | Notes |
+| ----- | ----- | ----- |
+| Phase-0 | ~65 | Per-member onboarding — clone, git, varsity, discord, branch creation |
+| Phase-1 | ~17 | Setup, scripts, analysis, webhook, GitHub Pages, housekeeping |
+| Phase-2 | 3 | Fetch/RS (#120), notebook skeleton (#199), Varsity 1/EB (#123) |
+| Misc | 1 | RSI/RT (#260) duplicate, closed |
+
+**⚠ Attention items:**
+
+- `#122 Correlation\RT` — unassigned; should be RS+GT per notebook plan (section 13)
+- `#261 RSI/RT` — unassigned; RT's notebook section needs assignment
+- `#28`, `#29`, `#30` — all unassigned docs tasks (Notion log, README, Streamlit basics)
 
 ### Notebook Section Order — `notebooks/market_analysis.ipynb`
 
 Sector-grouped. RS + GT own section 13 (correlation heatmap).
 
 | # | Sector | Ticker | Member |
-|---|--------|--------|--------|
+| --- | ------ | ------ | ------ |
 | 1 | Energy/Conglomerate | RELIANCE.NS | AJ |
 | 2 | IT | TCS.NS | AV |
 | 3 | IT | INFY.NS | AK |
