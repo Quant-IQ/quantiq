@@ -327,3 +327,88 @@ if __name__ == "__main__":
 			logger.error("FAILED — macd() returned None on custom valid params")
 
 	logger.info("--- Smoke test complete ---")
+
+
+
+All SMA Cases to Cover:
+SMA 20, 50, 200 — short, mid, long term
+Golden Cross — SMA20 crosses above SMA50 (bullish)
+Death Cross — SMA20 crosses below SMA50 (bearish)
+Price vs SMA — is price above or below SMA (trend direction)
+SMA Slope — rising/falling SMA (momentum)
+Multiple SMAs on same chart — combined view
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import yfinance as yf
+
+# Load data
+df = yf.download("RELIANCE.NS", start="2022-01-01", end="2024-12-31")
+df.dropna(inplace=True)
+
+# --- Calculate SMAs ---
+df['SMA_20']  = df['Close'].rolling(window=20).mean()
+df['SMA_50']  = df['Close'].rolling(window=50).mean()
+df['SMA_200'] = df['Close'].rolling(window=200).mean()
+
+# --- 1. All SMAs + Close Price ---
+plt.figure(figsize=(14, 5))
+plt.plot(df['Close'],   label='Close',   alpha=0.7)
+plt.plot(df['SMA_20'],  label='SMA 20',  linestyle='--')
+plt.plot(df['SMA_50'],  label='SMA 50',  linestyle='--')
+plt.plot(df['SMA_200'], label='SMA 200', linestyle='--')
+plt.title('RELIANCE.NS - All SMAs')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# --- 2. Golden Cross & Death Cross ---
+df['Signal'] = 0
+df.loc[df['SMA_20'] > df['SMA_50'], 'Signal'] = 1
+df.loc[df['SMA_20'] < df['SMA_50'], 'Signal'] = -1
+df['Crossover'] = df['Signal'].diff()
+
+golden = df[df['Crossover'] == 2]
+death  = df[df['Crossover'] == -2]
+
+plt.figure(figsize=(14, 5))
+plt.plot(df['Close'],  label='Close',  alpha=0.6)
+plt.plot(df['SMA_20'], label='SMA 20', linestyle='--')
+plt.plot(df['SMA_50'], label='SMA 50', linestyle='--')
+plt.scatter(golden.index, golden['Close'], marker='^', color='green', s=100, label='Golden Cross', zorder=5)
+plt.scatter(death.index,  death['Close'],  marker='v', color='red',   s=100, label='Death Cross',  zorder=5)
+plt.title('Golden Cross & Death Cross')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# --- 3. Price vs SMA_50 (Above/Below) ---
+plt.figure(figsize=(14, 5))
+plt.plot(df['Close'],  label='Close',  alpha=0.7)
+plt.plot(df['SMA_50'], label='SMA 50', linestyle='--', color='orange')
+plt.fill_between(df.index,
+                 df['Close'], df['SMA_50'],
+                 where=(df['Close'] >= df['SMA_50']),
+                 alpha=0.2, color='green', label='Above SMA50 (Bullish)')
+plt.fill_between(df.index,
+                 df['Close'], df['SMA_50'],
+                 where=(df['Close'] < df['SMA_50']),
+                 alpha=0.2, color='red', label='Below SMA50 (Bearish)')
+plt.title('Price vs SMA 50')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# --- 4. SMA Slope (Momentum) ---
+df['SMA_20_slope'] = df['SMA_20'].diff()
+
+plt.figure(figsize=(14, 4))
+plt.bar(df.index, df['SMA_20_slope'],
+        color=['green' if v >= 0 else 'red' for v in df['SMA_20_slope']],
+        alpha=0.6, label='SMA 20 Slope')
+plt.axhline(0, color='black', linewidth=0.8)
+plt.title('SMA 20 Slope (Momentum)')
+plt.legend()
+plt.tight_layout()
+plt.show()
