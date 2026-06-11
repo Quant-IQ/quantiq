@@ -330,13 +330,7 @@ if __name__ == "__main__":
 
 
 
-All SMA Cases to Cover:
-SMA 20, 50, 200 — short, mid, long term
-Golden Cross — SMA20 crosses above SMA50 (bullish)
-Death Cross — SMA20 crosses below SMA50 (bearish)
-Price vs SMA — is price above or below SMA (trend direction)
-SMA Slope — rising/falling SMA (momentum)
-Multiple SMAs on same chart — combined view
+
 
 
 import pandas as pd
@@ -345,6 +339,7 @@ import yfinance as yf
 
 # Load data
 df = yf.download("RELIANCE.NS", start="2022-01-01", end="2024-12-31")
+df.columns = df.columns.get_level_values(0)
 df.dropna(inplace=True)
 
 # --- Calculate SMAs ---
