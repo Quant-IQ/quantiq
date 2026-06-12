@@ -1,3 +1,11 @@
+"""
+Technical indicators module.
+
+Owner: AK
+File: src/data/indicators.py
+Phase: Phase-3
+"""
+
 import logging
 
 import pandas as pd
@@ -327,55 +335,92 @@ if __name__ == "__main__":
 
 	logger.info("--- Smoke test complete ---")
 
-"""
-Technical indicators module.
 
-Owner: AK
-File: src/data/indicators.py
-Phase: Phase-2
-
-Provides Series-to-Series technical indicator functions used by the
-screening and analytics pipeline.
-"""
-
-
-logger = logging.getLogger(__name__)
-
-
-def ema(close: pd.Series, window: int) -> pd.Series:
+def ema(close: pd.Series, window: int) -> pd.Series | None:
 	"""
 	Calculate Exponential Moving Average (EMA).
 
 	Args:
-	close: Series containing closing prices.
-	window: EMA lookback period. Must be greater than 0.
+		close (pd.Series): Series containing closing prices.
+		window (int): EMA lookback period. Must be greater than 0.
 
 	Returns:
-	pd.Series: EMA values with NaN rows removed.
-
-	Raises:
-	ValueError: If window is less than or equal to 0.
-	TypeError: If close is not a pandas Series.
-
-	Example:
-	>>> ema_series = ema(close, window=20)
-	>>> ema_series.tail()
+		pd.Series | None: EMA values with NaN rows removed.
+		Returns None if validation or computation fails.
 	"""
+
+	# Input validation
+	if close is None:
+		logger.error("ema() received None as input")
+		return None
+
 	if not isinstance(close, pd.Series):
-		raise TypeError("close must be a pandas Series")
+		logger.error(
+			"ema() expected pd.Series, got %s",
+			type(close).__name__,
+		)
+		return None
 
-	if window <= 0:
-		raise ValueError("window must be greater than 0")
+	if close.empty:
+		logger.warning("ema() received an empty Series")
+		return None
 
-	logger.debug("Calculating EMA with window=%s", window)
+	if not isinstance(window, int) or window <= 0:
+		logger.error(
+			"ema() parameter 'window' must be a positive integer, got %r",
+			window,
+		)
+		return None
 
-	ema_series = EMAIndicator(close=close, window=window).ema_indicator()
+	try:
+		logger.info(
+			"Computing EMA for %d rows (window=%d)",
+			len(close),
+			window,
+		)
 
-	return ema_series.dropna()
+		# Defensive squeeze for callers that may pass df[['Close']]
+		close_series = pd.Series(close.squeeze())
+
+		ema_series = EMAIndicator(
+			close=close_series,
+			window=window,
+		).ema_indicator()
+
+		ema_series = ema_series.dropna()
+
+		if ema_series.empty:
+			logger.warning("ema() produced an empty result after dropna()")
+			return None
+
+		logger.info(
+			"EMA computed successfully — %d usable rows",
+			len(ema_series),
+		)
+
+		return ema_series
+
+	except Exception as e:
+		logger.error(
+			"ema() computation failed unexpectedly: %s",
+			e,
+			exc_info=True,
+		)
+		return None
 
 
-if __name__ == "__main__":
-	sample_close = pd.Series([100, 101, 102, 103, 104, 105, 106, 107, 108, 109])
+logger.info("Test 8 — EMA")
 
-	result = ema(sample_close, window=3)
-	logger.info("EMA smoke test completed. Rows=%d", len(result))
+sample_close = pd.Series([100, 101, 102, 103, 104, 105, 106, 107, 108, 109])
+
+ema_result = ema(sample_close, window=3)
+
+if ema_result is not None:
+	logger.info(
+		"PASSED — EMA rows=%d",
+		len(ema_result),
+	)
+else:
+	logger.error("FAILED — ema() returned None")
+
+logger.info("--- Smoke test complete ---")
