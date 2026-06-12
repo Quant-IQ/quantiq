@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 # MACD
 # ---------------------------------------------------------------------------
 
-
 def macd(
 	df: pd.DataFrame,
 	window_slow: int = 26,
@@ -120,7 +119,9 @@ def macd(
 
 	# Must be a DataFrame (not a Series, dict, etc.)
 	if not isinstance(df, pd.DataFrame):
-		logger.error("macd() expected pd.DataFrame, got %s", type(df).__name__)
+		logger.error(
+			"macd() expected pd.DataFrame, got %s", type(df).__name__
+		)
 		return None
 
 	# Must be non-empty
@@ -131,7 +132,8 @@ def macd(
 	# The target price column must exist
 	if column not in df.columns:
 		logger.error(
-			"macd() could not find column '%s' in DataFrame. Available columns: %s",
+			"macd() could not find column '%s' in DataFrame. "
+			"Available columns: %s",
 			column,
 			list(df.columns),
 		)
@@ -201,12 +203,14 @@ def macd(
 		)
 
 		# Append the three standard MACD columns
-		result["MACD"] = macd_obj.macd()  # fast EMA − slow EMA
+		result["MACD"]        = macd_obj.macd()         # fast EMA − slow EMA
 		result["MACD_signal"] = macd_obj.macd_signal()  # signal (trigger) line
-		result["MACD_diff"] = macd_obj.macd_diff()  # histogram value
+		result["MACD_diff"]   = macd_obj.macd_diff()    # histogram value
 
 	except Exception as e:
-		logger.error("macd() computation failed unexpectedly: %s", e, exc_info=True)
+		logger.error(
+			"macd() computation failed unexpectedly: %s", e, exc_info=True
+		)
 		return None
 
 	# ------------------------------------------------------------------
@@ -241,101 +245,9 @@ def macd(
 	)
 
 	return result
-
-
 # ---------------------------------------------------------------------------
-# Smoke test — run with: python src/data/indicators.py
+# EMA
 # ---------------------------------------------------------------------------
-
-if __name__ == "__main__":
-	import sys
-
-	logging.basicConfig(
-		level=logging.INFO,
-		format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-		handlers=[
-			logging.StreamHandler(sys.stdout),
-		],
-	)
-
-	# Import fetch here (inside __main__) so indicators.py stays import-clean
-	# when used as a library — no circular dependency risk
-	try:
-		from fetch import fetch_ohlc  # works when run from src/data/
-	except ImportError:
-		from src.data.fetch import fetch_ohlc  # works when run from repo root
-
-	logger.info("--- Smoke test: MACD indicator ---")
-
-	# ---- Test 1: Normal path ----
-	logger.info("Test 1 — normal path: RELIANCE.NS, 1y daily")
-	df = fetch_ohlc("RELIANCE.NS", period="1y", interval="1d")
-	if df is not None:
-		result = macd(df)
-		if result is not None:
-			logger.info(
-				"PASSED — shape: %s, columns: %s",
-				result.shape,
-				list(result.columns),
-			)
-			logger.info(
-				"Last 3 rows:\n%s",
-				result[["Close", "MACD", "MACD_signal", "MACD_diff"]]
-				.tail(3)
-				.to_string(),
-			)
-		else:
-			logger.error("FAILED — macd() returned None on valid input")
-	else:
-		logger.warning("Skipping Test 1 — fetch returned None (network unavailable?)")
-
-	# ---- Test 2: Empty DataFrame ----
-	logger.info("Test 2 — empty DataFrame input")
-	result_empty = macd(pd.DataFrame())
-	assert result_empty is None, "Expected None for empty DataFrame"
-	logger.info("PASSED — returned None for empty DataFrame")
-
-	# ---- Test 3: Missing Close column ----
-	logger.info("Test 3 — missing 'Close' column")
-	df_no_close = pd.DataFrame({"Open": [100, 101], "High": [102, 103]})
-	result_no_close = macd(df_no_close)
-	assert result_no_close is None, "Expected None when Close column is absent"
-	logger.info("PASSED — returned None for missing Close column")
-
-	# ---- Test 4: window_fast >= window_slow ----
-	logger.info("Test 4 — inverted windows (window_fast >= window_slow)")
-	if df is not None:
-		result_inverted = macd(df, window_fast=26, window_slow=12)
-		assert result_inverted is None, "Expected None for inverted window params"
-		logger.info("PASSED — returned None for inverted window params")
-
-	# ---- Test 5: DataFrame too short ----
-	logger.info("Test 5 — DataFrame shorter than minimum required rows")
-	df_short = pd.DataFrame({"Close": [100.0] * 10})  # only 10 rows, need 34
-	result_short = macd(df_short)
-	assert result_short is None, "Expected None for too-short DataFrame"
-	logger.info("PASSED — returned None for too-short DataFrame")
-
-	# ---- Test 6: None input ----
-	logger.info("Test 6 — None input")
-	result_none = macd(None)  # type: ignore[arg-type]
-	assert result_none is None, "Expected None for None input"
-	logger.info("PASSED — returned None for None input")
-
-	# ---- Test 7: Custom parameters ----
-	logger.info(
-		"Test 7 — custom parameters (window_slow=20, window_fast=8, window_sign=6)"
-	)
-	if df is not None:
-		result_custom = macd(df, window_slow=20, window_fast=8, window_sign=6)
-		if result_custom is not None:
-			logger.info("PASSED — custom params shape: %s", result_custom.shape)
-		else:
-			logger.error("FAILED — macd() returned None on custom valid params")
-
-	logger.info("--- Smoke test complete ---")
-
-
 def ema(close: pd.Series, window: int) -> pd.Series | None:
 	"""
 	Calculate Exponential Moving Average (EMA).
@@ -409,18 +321,137 @@ def ema(close: pd.Series, window: int) -> pd.Series | None:
 		return None
 
 
-logger.info("Test 8 — EMA")
+# ---------------------------------------------------------------------------
+# Smoke test — run with: python src/data/indicators.py
+# ---------------------------------------------------------------------------
 
-sample_close = pd.Series([100, 101, 102, 103, 104, 105, 106, 107, 108, 109])
+if __name__ == "__main__":
+	import sys
 
-ema_result = ema(sample_close, window=3)
-
-if ema_result is not None:
-	logger.info(
-		"PASSED — EMA rows=%d",
-		len(ema_result),
+	logging.basicConfig(
+		level=logging.INFO,
+		format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+		handlers=[
+			logging.StreamHandler(sys.stdout),
+		],
 	)
-else:
-	logger.error("FAILED — ema() returned None")
 
-logger.info("--- Smoke test complete ---")
+	# Import fetch here (inside __main__) so indicators.py stays import-clean
+	# when used as a library — no circular dependency risk
+	try:
+		from fetch import fetch_ohlc  # works when run from src/data/
+	except ImportError:
+		from src.data.fetch import fetch_ohlc  # works when run from repo root
+
+	logger.info("--- Smoke test: MACD indicator ---")
+
+	# ---- Test 1: Normal path ----
+	logger.info("Test 1 — normal path: RELIANCE.NS, 1y daily")
+	df = fetch_ohlc("RELIANCE.NS", period="1y", interval="1d")
+	if df is not None:
+		result = macd(df)
+		if result is not None:
+			logger.info(
+				"PASSED — shape: %s, columns: %s",
+				result.shape,
+				list(result.columns),
+			)
+			logger.info("Last 3 rows:\n%s",
+				result[["Close", "MACD", "MACD_signal", "MACD_diff"]].tail(3).to_string()
+			)
+		else:
+			logger.error("FAILED — macd() returned None on valid input")
+	else:
+		logger.warning("Skipping Test 1 — fetch returned None (network unavailable?)")
+
+	# ---- Test 2: Empty DataFrame ----
+	logger.info("Test 2 — empty DataFrame input")
+	result_empty = macd(pd.DataFrame())
+	assert result_empty is None, "Expected None for empty DataFrame"
+	logger.info("PASSED — returned None for empty DataFrame")
+
+	# ---- Test 3: Missing Close column ----
+	logger.info("Test 3 — missing 'Close' column")
+	df_no_close = pd.DataFrame({"Open": [100, 101], "High": [102, 103]})
+	result_no_close = macd(df_no_close)
+	assert result_no_close is None, "Expected None when Close column is absent"
+	logger.info("PASSED — returned None for missing Close column")
+
+	# ---- Test 4: window_fast >= window_slow ----
+	logger.info("Test 4 — inverted windows (window_fast >= window_slow)")
+	if df is not None:
+		result_inverted = macd(df, window_fast=26, window_slow=12)
+		assert result_inverted is None, "Expected None for inverted window params"
+		logger.info("PASSED — returned None for inverted window params")
+
+	# ---- Test 5: DataFrame too short ----
+	logger.info("Test 5 — DataFrame shorter than minimum required rows")
+	df_short = pd.DataFrame({"Close": [100.0] * 10})  # only 10 rows, need 34
+	result_short = macd(df_short)
+	assert result_short is None, "Expected None for too-short DataFrame"
+	logger.info("PASSED — returned None for too-short DataFrame")
+
+	# ---- Test 6: None input ----
+	logger.info("Test 6 — None input")
+	result_none = macd(None)  # type: ignore[arg-type]
+	assert result_none is None, "Expected None for None input"
+	logger.info("PASSED — returned None for None input")
+
+	# ---- Test 7: Custom parameters ----
+	logger.info("Test 7 — custom parameters (window_slow=20, window_fast=8, window_sign=6)")
+	if df is not None:
+		result_custom = macd(df, window_slow=20, window_fast=8, window_sign=6)
+		if result_custom is not None:
+			logger.info(
+				"PASSED — custom params shape: %s", result_custom.shape
+			)
+		else:
+			logger.error("FAILED — macd() returned None on custom valid params")
+
+	logger.info("--- Smoke test complete ---")
+
+	# ---------------------------------------------------------------------------
+	# EMA Smoke Tests
+	# ---------------------------------------------------------------------------
+
+	logger.info("--- Smoke test: EMA indicator ---")
+
+	# ---- Test 1: Normal path ----
+	logger.info("Test 1 — EMA normal path")
+
+	sample_close = pd.Series(
+		[100, 101, 102, 103, 104, 105, 106, 107, 108, 109]
+	)
+
+	ema_result = ema(sample_close, window=3)
+
+	if ema_result is not None:
+		logger.info("PASSED — EMA rows=%d", len(ema_result))
+	else:
+		logger.error("FAILED — ema() returned None")
+
+	# ---- Test 2: Empty Series ----
+	logger.info("Test 2 — empty Series")
+
+	result_empty = ema(pd.Series(dtype=float), window=3)
+	assert result_empty is None
+
+	logger.info("PASSED — returned None for empty Series")
+
+	# ---- Test 3: Invalid Window ----
+	logger.info("Test 3 — invalid window")
+
+	result_invalid = ema(sample_close, window=0)
+	assert result_invalid is None
+
+	logger.info("PASSED — returned None for invalid window")
+
+	# ---- Test 4: None Input ----
+	logger.info("Test 4 — None input")
+
+	result_none = ema(None, window=3)  # type: ignore[arg-type]
+	assert result_none is None
+
+	logger.info("PASSED — returned None for None input")
+
+	logger.info("--- EMA smoke test complete ---")
