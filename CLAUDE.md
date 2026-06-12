@@ -574,7 +574,7 @@ Sector-grouped. RS + GT own section 13 (correlation heatmap).
 | 9 | Auto | M&M.NS | GT |
 | 10 | Infrastructure | LT.NS | RT |
 | 11 | Consumer | TITAN.NS | NS |
-| 12 | Defense | APOLLOMICRO.NS | SmS |
+| 12 | Defense | APOLLO.NS | SmS |
 | 13 | Cross-sector | Correlation heatmap | RS + GT |
 
 **Member section template:** fetch → summary stats → candlestick + EMA20/50 → MACD → RSI → volume. Fundamentals via `yf.Ticker.info` with None-guards: P/E, EPS growth, D/E, Cash/Debt, ICR, PEG (5Y+1Y), reserve & surplus, promoter%, pledged shares%, dividend yield. End with 3–5 sentence observation.
