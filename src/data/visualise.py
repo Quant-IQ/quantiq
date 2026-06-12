@@ -7,10 +7,11 @@ Provides Plotly candlestick charts with optional overlays:
 - Bollinger Bands
 """
 
-from __future__ import annotations
-
+import logging
 import pandas as pd
 import plotly.graph_objects as go
+
+logger = logging.getLogger(__name__)
 
 
 def plot_ohlc(
@@ -46,7 +47,12 @@ def plot_ohlc(
 
 	    show_bollinger (bool):
 	        Whether to display Bollinger Bands.
+	Raises:
+    	ValueError:
+        	If the input DataFrame is empty.
 
+    	ValueError:
+        	If any required OHLC columns are missing.
 	Returns:
 	    go.Figure:
 	        Plotly figure object.
@@ -133,3 +139,16 @@ def plot_ohlc(
 	)
 
 	return fig
+
+if __name__ == "__main__":
+    sample_df = pd.DataFrame(
+        {
+            "Open": [100, 101, 102],
+            "High": [102, 103, 104],
+            "Low": [99, 100, 101],
+            "Close": [101, 102, 103],
+        }
+    )
+
+    fig = plot_ohlc(sample_df)
+    print("Smoke test passed")
