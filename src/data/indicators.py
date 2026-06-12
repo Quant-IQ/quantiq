@@ -327,3 +327,244 @@ if __name__ == "__main__":
 			logger.error("FAILED — macd() returned None on custom valid params")
 
 	logger.info("--- Smoke test complete ---")
+
+
+
+
+
+#sma indicator
+def calculate_sma(
+	df: pd.DataFrame,
+	windows: list[int] = [20, 50],
+	col: str = "Close",
+) -> pd.DataFrame | None:
+	"""Calculate Simple Moving Averages for multiple windows and append as columns.
+
+	Iterates over each window, computes a rolling mean on the specified price
+	column via the ``ta`` library's ``SMAIndicator``, and writes the result into
+	a new column named ``SMA<window>`` (e.g. ``SMA20``, ``SMA50``).
+	Rows where ANY of the new SMA columns are NaN (i.e. the first
+	``max(windows) - 1`` rows) are dropped before returning, so the DataFrame
+	is safe to pass directly into a vectorbt backtest.
+
+	Args:
+		df (pd.DataFrame): OHLCV DataFrame as returned by ``fetch_ohlc`` or
+			``fetch_batch``. Must contain the column specified by ``col``.
+			Index should be a DatetimeIndex — a non-DatetimeIndex is accepted
+			with a warning but may cause issues in downstream vectorbt usage.
+		windows (list[int]): Ordered list of rolling window sizes in bars.
+			Defaults to ``[20, 50]`` (SMA20 and SMA50 — the Phase 3
+			crossover strategy pair). Each window produces one new column:
+			``SMA<window>``. Duplicate values are deduplicated automatically.
+		col (str): Price column to compute SMA on. Defaults to ``"Close"``.
+			Must exist in ``df`` and must not be entirely NaN.
+
+	Returns:
+		pd.DataFrame | None: Copy of the input DataFrame with one new column
+		per unique window (e.g. ``SMA20``, ``SMA50``) appended.
+		Leading NaN rows (up to ``max(windows) - 1``) are dropped.
+		Original columns are never modified.
+		Returns ``None`` if any unrecoverable error occurs — callers must
+		guard against ``None`` before using the result.
+
+	Raises:
+		No exceptions are raised — all errors are logged and ``None``
+		is returned so the pipeline stays alive on bad input.
+
+	Example:
+		Standard crossover pair (SMA20 + SMA50)::
+
+			df = fetch_ohlc("RELIANCE.NS", period="1y")
+			df = calculate_sma(df)            # default [20, 50]
+			if df is None:
+				...                           # handle failure
+			# df now has columns: Open High Low Close Volume SMA20 SMA50
+
+		Custom windows::
+
+			df = calculate_sma(df, windows=[10, 20, 200])
+			# df now has columns: ... SMA10 SMA20 SMA200
+
+		Generate crossover signal after calling this::
+
+			df["signal"] = (
+				(df["SMA20"] > df["SMA50"]) &
+				(df["SMA20"].shift(1) <= df["SMA50"].shift(1))
+			).astype(int)   # 1 on the bar where SMA20 crosses above SMA50
+
+	Note:
+		SMA is the simplest trend indicator — no weighting, equal contribution
+		from every bar in the window. Crossover strategies (SMA20 / SMA50)
+		are the Phase 3 primary strategy defined in ``CLAUDE.md §11``.
+		For smoother, more responsive signals consider EMA (``calculate_ema``),
+		which weights recent bars more heavily.
+	"""
+	# ------------------------------------------------------------------ #
+	# 1. Validate inputs before touching the DataFrame                     #
+	# ------------------------------------------------------------------ #
+	try:
+		# Guard: windows must be a non-empty list
+		if not windows:
+			logger.error("'windows' is empty — must contain at least one value.")
+			return None
+
+		# Guard: every window must be a plain integer >= 1
+		# Non-integer values (e.g. 20.5) would be silently truncated or
+		# cause unexpected behaviour inside SMAIndicator — reject early.
+		for w in windows:
+			if not isinstance(w, int):
+				logger.error(
+					"All window values must be integers, got %s (%s).", w, type(w).__name__
+				)
+				return None
+			if w < 1:
+				logger.error("Window size must be >= 1, got %d.", w)
+				return None
+
+		# Deduplicate windows while preserving order so SMA20 always comes
+		# before SMA50 in the column output regardless of input order.
+		# e.g. [20, 20, 50] → [20, 50]
+		seen: set[int] = set()
+		deduped: list[int] = []
+		for w in windows:
+			if w in seen:
+				logger.warning("Duplicate window %d removed from windows list.", w)
+			else:
+				seen.add(w)
+				deduped.append(w)
+		windows = deduped
+
+	except Exception as e:
+		logger.error("Unexpected error during input validation: %s", e)
+		return None
+
+	# ------------------------------------------------------------------ #
+	# 2. Validate the DataFrame itself                                     #
+	# ------------------------------------------------------------------ #
+	try:
+		# Guard: empty DataFrame — nothing to compute
+		if df.empty:
+			logger.error("Input DataFrame is empty — cannot compute SMA.")
+			return None
+
+		# Guard: target column must exist
+		if col not in df.columns:
+			logger.error(
+				"Column '%s' not found in DataFrame. Available columns: %s",
+				col,
+				list(df.columns),
+			)
+			return None
+
+		# Guard: target column must not be entirely NaN
+		# A fully NaN column would produce all-NaN SMA columns, which
+		# dropna() would then wipe completely — silent data loss.
+		if df[col].isna().all():
+			logger.error(
+				"Column '%s' is entirely NaN — cannot compute SMA.", col
+			)
+			return None
+
+		# Warn if partially NaN — SMAIndicator will silently propagate NaNs
+		# through any window that overlaps a NaN value.
+		nan_count = df[col].isna().sum()
+		if nan_count:
+			logger.warning(
+				"Column '%s' contains %d NaN value(s) — SMA may be affected.",
+				col,
+				nan_count,
+			)
+
+		# Guard: DataFrame must have enough rows for the largest window.
+		# If not, SMAIndicator returns all NaN and dropna() wipes everything.
+		# e.g. windows=[200] on a 50-row DataFrame → silent empty result.
+		largest_window = max(windows)
+		if len(df) < largest_window:
+			logger.error(
+				"DataFrame has %d rows but largest window is %d — "
+				"not enough data to produce any valid SMA value. "
+				"Fetch a longer period or reduce the window size.",
+				len(df),
+				largest_window,
+			)
+			return None
+
+		# Warn if the index is not a DatetimeIndex — fetch_ohlc always
+		# produces one, but a raw DataFrame passed directly might not.
+		# Downstream vectorbt usage requires a DatetimeIndex.
+		if not isinstance(df.index, pd.DatetimeIndex):
+			logger.warning(
+				"DataFrame index is not a DatetimeIndex (%s). "
+				"Downstream vectorbt usage may fail.",
+				type(df.index).__name__,
+			)
+
+	except Exception as e:
+		logger.error("Unexpected error while validating DataFrame: %s", e)
+		return None
+
+	# ------------------------------------------------------------------ #
+	# 3. Compute SMAs                                                      #
+	# ------------------------------------------------------------------ #
+	try:
+		# Work on a copy — never mutate the caller's DataFrame.
+		# Callers often reuse the same df across multiple indicator calls.
+		df = df.copy()
+
+		for window in windows:
+			col_name = f"SMA{window}"
+			df[col_name] = SMAIndicator(
+				close=df[col], window=window
+			).sma_indicator()
+			logger.info(
+				"Computed %s (window=%d) — first valid index: %s",
+				col_name,
+				window,
+				df[col_name].first_valid_index(),
+			)
+
+	except Exception as e:
+		logger.error("SMAIndicator computation failed: %s", e)
+		return None
+
+	# ------------------------------------------------------------------ #
+	# 4. Drop leading NaN rows                                             #
+	# ------------------------------------------------------------------ #
+	try:
+		# Drop AFTER all windows are computed — not after each one.
+		# Reason: a row that passes SMA20's NaN check may still be NaN
+		# for SMA50 if dropped mid-loop, producing a false clean row.
+		sma_cols = [f"SMA{w}" for w in windows]
+		rows_before = len(df)
+		df.dropna(subset=sma_cols, inplace=True)
+		dropped = rows_before - len(df)
+
+		if dropped:
+			logger.info(
+				"Dropped %d leading NaN row(s) after SMA calculation "
+				"(largest window: %d).",
+				dropped,
+				largest_window,
+			)
+
+		# Sanity check: if the entire DataFrame was wiped after dropna,
+		# something went wrong that the row-count guard above didn't catch
+		# (e.g. NaNs in the middle of the price series that broke every window).
+		if df.empty:
+			logger.error(
+				"DataFrame is empty after dropna — all rows were NaN. "
+				"Check '%s' column for gaps or corrupt data.",
+				col,
+			)
+			return None
+
+	except Exception as e:
+		logger.error("Unexpected error during dropna step: %s", e)
+		return None
+
+	logger.info(
+		"calculate_sma complete — %d rows returned, columns added: %s",
+		len(df),
+		sma_cols,
+	)
+	return df
