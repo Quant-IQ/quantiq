@@ -1,7 +1,7 @@
 """
 Technical indicators module.
 
-Owner: AK
+Owner: AV
 File: src/data/indicators.py
 Phase: Phase-3
 """
@@ -292,10 +292,10 @@ def ema(close: pd.Series, window: int) -> pd.Series | None:
 		)
 
 		# Defensive squeeze for callers that may pass df[['Close']]
-		close_series = pd.Series(close.squeeze())
+		close = pd.Series(close.squeeze())
 
 		ema_series = EMAIndicator(
-			close=close_series,
+			close=close,
 			window=window,
 		).ema_indicator()
 
