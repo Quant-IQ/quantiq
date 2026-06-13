@@ -1,6 +1,6 @@
 """
 Technical Analysis Visualization Module
-Contributors: AR (Dev Lead) | Phase 2 Core Graphics Support
+Contributors: AR (Dev Lead) | Phase 3 Target Module
 
 Design Decision Rationale (CLAUDE.md Compliance):
 Utilizes purely interactive Plotly chart structures to satisfy dynamic notebook
