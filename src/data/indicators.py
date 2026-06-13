@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # MACD
 # ---------------------------------------------------------------------------
 
+
 def macd(
 	df: pd.DataFrame,
 	window_slow: int = 26,
@@ -119,9 +120,7 @@ def macd(
 
 	# Must be a DataFrame (not a Series, dict, etc.)
 	if not isinstance(df, pd.DataFrame):
-		logger.error(
-			"macd() expected pd.DataFrame, got %s", type(df).__name__
-		)
+		logger.error("macd() expected pd.DataFrame, got %s", type(df).__name__)
 		return None
 
 	# Must be non-empty
@@ -132,8 +131,7 @@ def macd(
 	# The target price column must exist
 	if column not in df.columns:
 		logger.error(
-			"macd() could not find column '%s' in DataFrame. "
-			"Available columns: %s",
+			"macd() could not find column '%s' in DataFrame. Available columns: %s",
 			column,
 			list(df.columns),
 		)
@@ -203,14 +201,12 @@ def macd(
 		)
 
 		# Append the three standard MACD columns
-		result["MACD"]        = macd_obj.macd()         # fast EMA − slow EMA
+		result["MACD"] = macd_obj.macd()  # fast EMA − slow EMA
 		result["MACD_signal"] = macd_obj.macd_signal()  # signal (trigger) line
-		result["MACD_diff"]   = macd_obj.macd_diff()    # histogram value
+		result["MACD_diff"] = macd_obj.macd_diff()  # histogram value
 
 	except Exception as e:
-		logger.error(
-			"macd() computation failed unexpectedly: %s", e, exc_info=True
-		)
+		logger.error("macd() computation failed unexpectedly: %s", e, exc_info=True)
 		return None
 
 	# ------------------------------------------------------------------
@@ -245,6 +241,8 @@ def macd(
 	)
 
 	return result
+
+
 # ---------------------------------------------------------------------------
 # EMA
 # ---------------------------------------------------------------------------
@@ -258,6 +256,8 @@ def ema(close: pd.Series, window: int) -> pd.Series | None:
 
 	Returns:
 		pd.Series | None: EMA values with NaN rows removed.
+		The returned Series has a shorter index than the input because
+		the first (window - 1) rows are dropped after EMA calculation.
 		Returns None if validation or computation fails.
 	"""
 
@@ -356,8 +356,11 @@ if __name__ == "__main__":
 				result.shape,
 				list(result.columns),
 			)
-			logger.info("Last 3 rows:\n%s",
-				result[["Close", "MACD", "MACD_signal", "MACD_diff"]].tail(3).to_string()
+			logger.info(
+				"Last 3 rows:\n%s",
+				result[["Close", "MACD", "MACD_signal", "MACD_diff"]]
+				.tail(3)
+				.to_string(),
 			)
 		else:
 			logger.error("FAILED — macd() returned None on valid input")
@@ -398,13 +401,13 @@ if __name__ == "__main__":
 	logger.info("PASSED — returned None for None input")
 
 	# ---- Test 7: Custom parameters ----
-	logger.info("Test 7 — custom parameters (window_slow=20, window_fast=8, window_sign=6)")
+	logger.info(
+		"Test 7 — custom parameters (window_slow=20, window_fast=8, window_sign=6)"
+	)
 	if df is not None:
 		result_custom = macd(df, window_slow=20, window_fast=8, window_sign=6)
 		if result_custom is not None:
-			logger.info(
-				"PASSED — custom params shape: %s", result_custom.shape
-			)
+			logger.info("PASSED — custom params shape: %s", result_custom.shape)
 		else:
 			logger.error("FAILED — macd() returned None on custom valid params")
 
@@ -419,9 +422,7 @@ if __name__ == "__main__":
 	# ---- Test 1: Normal path ----
 	logger.info("Test 1 — EMA normal path")
 
-	sample_close = pd.Series(
-		[100, 101, 102, 103, 104, 105, 106, 107, 108, 109]
-	)
+	sample_close = pd.Series([100, 101, 102, 103, 104, 105, 106, 107, 108, 109])
 
 	ema_result = ema(sample_close, window=3)
 
