@@ -8,6 +8,7 @@ Provides Plotly candlestick charts with optional overlays:
 """
 
 import logging
+
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -24,38 +25,38 @@ def plot_ohlc(
 	show_bollinger: bool = True,
 ) -> go.Figure:
 	"""
-	Create an interactive Plotly candlestick chart.
+	    Create an interactive Plotly candlestick chart.
 
-	Args:
-	    df (pd.DataFrame):
-	        DataFrame containing Open, High, Low and Close columns.
+	    Args:
+	 df (pd.DataFrame):
+	     DataFrame containing Open, High, Low and Close columns.
 
-	    sma_window (int):
-	        Window size for SMA overlay.
+	 sma_window (int):
+	     Window size for SMA overlay.
 
-	    ema_window (int):
-	        Window size for EMA overlay.
+	 ema_window (int):
+	     Window size for EMA overlay.
 
-	    bb_window (int):
-	        Window size for Bollinger Bands.
+	 bb_window (int):
+	     Window size for Bollinger Bands.
 
-	    show_sma (bool):
-	        Whether to display SMA.
+	 show_sma (bool):
+	     Whether to display SMA.
 
-	    show_ema (bool):
-	        Whether to display EMA.
+	 show_ema (bool):
+	     Whether to display EMA.
 
-	    show_bollinger (bool):
-	        Whether to display Bollinger Bands.
-	Raises:
-    	ValueError:
-        	If the input DataFrame is empty.
-
-    	ValueError:
-        	If any required OHLC columns are missing.
+	 show_bollinger (bool):
+	     Whether to display Bollinger Bands.
 	Returns:
-	    go.Figure:
-	        Plotly figure object.
+	 go.Figure:
+	     Plotly figure object.
+	    Raises:
+	 ValueError:
+	     If the input DataFrame is empty.
+
+	 ValueError:
+	     If any required OHLC columns are missing.
 	"""
 	if df.empty:
 		raise ValueError("Input DataFrame cannot be empty")
@@ -140,15 +141,16 @@ def plot_ohlc(
 
 	return fig
 
-if __name__ == "__main__":
-    sample_df = pd.DataFrame(
-        {
-            "Open": [100, 101, 102],
-            "High": [102, 103, 104],
-            "Low": [99, 100, 101],
-            "Close": [101, 102, 103],
-        }
-    )
 
-    fig = plot_ohlc(sample_df)
-    print("Smoke test passed")
+if __name__ == "__main__":
+	sample_df = pd.DataFrame(
+		{
+			"Open": [100, 101, 102],
+			"High": [102, 103, 104],
+			"Low": [99, 100, 101],
+			"Close": [101, 102, 103],
+		}
+	)
+
+	fig = plot_ohlc(sample_df)
+	logger.info("Smoke test passed")
