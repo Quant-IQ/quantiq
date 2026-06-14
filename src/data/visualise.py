@@ -25,41 +25,28 @@ def plot_ohlc(
 	show_bollinger: bool = True,
 ) -> go.Figure:
 	"""
-	    Create an interactive Plotly candlestick chart.
+	Create an interactive Plotly candlestick chart.
 
-	    Args:
-	 df (pd.DataFrame):
-	     DataFrame containing Open, High, Low and Close columns.
+	Args:
+	    df (pd.DataFrame): DataFrame containing Open, High, Low and Close columns.
+	    sma_window (int): Window size for SMA overlay. Default 20.
+	    ema_window (int): Window size for EMA overlay. Default 20.
+	    bb_window (int): Window size for Bollinger Bands. Default 20.
+	    show_sma (bool): Whether to display SMA overlay.
+	    show_ema (bool): Whether to display EMA overlay.
+	    show_bollinger (bool): Whether to display Bollinger Bands.
 
-	 sma_window (int):
-	     Window size for SMA overlay.
-
-	 ema_window (int):
-	     Window size for EMA overlay.
-
-	 bb_window (int):
-	     Window size for Bollinger Bands.
-
-	 show_sma (bool):
-	     Whether to display SMA.
-
-	 show_ema (bool):
-	     Whether to display EMA.
-
-	 show_bollinger (bool):
-	     Whether to display Bollinger Bands.
 	Returns:
-	 go.Figure:
-	     Plotly figure object.
-	    Raises:
-	 ValueError:
-	     If the input DataFrame is empty.
+	    go.Figure: Plotly figure object with candlestick and requested overlays.
 
-	 ValueError:
-	     If any required OHLC columns are missing.
+	Raises:
+	    ValueError: If the input DataFrame is empty.
+	    ValueError: If required OHLC columns are missing.
 	"""
+
 	if df.empty:
 		raise ValueError("Input DataFrame cannot be empty")
+
 	required_columns = {"Open", "High", "Low", "Close"}
 
 	missing_columns = required_columns - set(df.columns)
@@ -143,6 +130,11 @@ def plot_ohlc(
 
 
 if __name__ == "__main__":
+	logging.basicConfig(
+		level=logging.INFO,
+		format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+	)
+
 	sample_df = pd.DataFrame(
 		{
 			"Open": [100, 101, 102],
