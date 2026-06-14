@@ -333,77 +333,113 @@ if __name__ == "__main__":
 
 
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import yfinance as yf
+def sma(
+    df: pd.DataFrame,
+    window: int = 20,
+    column: str = "Close",
+) -> pd.DataFrame | None:
+    """Append SMA column to an OHLCV DataFrame.
 
-# Load data
-df = yf.download("RELIANCE.NS", start="2022-01-01", end="2024-12-31")
-df.columns = df.columns.get_level_values(0)
-df.dropna(inplace=True)
+    Args:
+        df (pd.DataFrame): OHLCV DataFrame. Must contain the column
+            named by ``column`` (default ``"Close"``).
+        window (int): Rolling window period. Defaults to 20.
+        column (str): Price column to compute SMA on. Defaults to ``"Close"``.
 
-# --- Calculate SMAs ---
-df['SMA_20']  = df['Close'].rolling(window=20).mean()
-df['SMA_50']  = df['Close'].rolling(window=50).mean()
-df['SMA_200'] = df['Close'].rolling(window=200).mean()
+    Returns:
+        pd.DataFrame | None: Copy of ``df`` with ``SMA_{window}`` column
+            appended. Returns None if input validation fails.
 
-# --- 1. All SMAs + Close Price ---
-plt.figure(figsize=(14, 5))
-plt.plot(df['Close'],   label='Close',   alpha=0.7)
-plt.plot(df['SMA_20'],  label='SMA 20',  linestyle='--')
-plt.plot(df['SMA_50'],  label='SMA 50',  linestyle='--')
-plt.plot(df['SMA_200'], label='SMA 200', linestyle='--')
-plt.title('RELIANCE.NS - All SMAs')
-plt.legend()
-plt.tight_layout()
-plt.show()
+    Raises:
+        This function does not propagate exceptions — all errors are
+        caught, logged at ERROR level, and None is returned.
+    """
+    # 1. Input validation
+    if df is None:
+        logger.error("sma() received None as input")
+        return None
 
-# --- 2. Golden Cross & Death Cross ---
-df['Signal'] = 0
-df.loc[df['SMA_20'] > df['SMA_50'], 'Signal'] = 1
-df.loc[df['SMA_20'] < df['SMA_50'], 'Signal'] = -1
-df['Crossover'] = df['Signal'].diff()
+    if not isinstance(df, pd.DataFrame):
+        logger.error("sma() expected pd.DataFrame, got %s", type(df).__name__)
+        return None
 
-golden = df[df['Crossover'] == 2]
-death  = df[df['Crossover'] == -2]
+    if df.empty:
+        logger.warning("sma() received an empty DataFrame")
+        return None
 
-plt.figure(figsize=(14, 5))
-plt.plot(df['Close'],  label='Close',  alpha=0.6)
-plt.plot(df['SMA_20'], label='SMA 20', linestyle='--')
-plt.plot(df['SMA_50'], label='SMA 50', linestyle='--')
-plt.scatter(golden.index, golden['Close'], marker='^', color='green', s=100, label='Golden Cross', zorder=5)
-plt.scatter(death.index,  death['Close'],  marker='v', color='red',   s=100, label='Death Cross',  zorder=5)
-plt.title('Golden Cross & Death Cross')
-plt.legend()
-plt.tight_layout()
-plt.show()
+    if column not in df.columns:
+        logger.error(
+            "sma() could not find column '%s'. Available: %s",
+            column, list(df.columns),
+        )
+        return None
 
-# --- 3. Price vs SMA_50 (Above/Below) ---
-plt.figure(figsize=(14, 5))
-plt.plot(df['Close'],  label='Close',  alpha=0.7)
-plt.plot(df['SMA_50'], label='SMA 50', linestyle='--', color='orange')
-plt.fill_between(df.index,
-                 df['Close'], df['SMA_50'],
-                 where=(df['Close'] >= df['SMA_50']),
-                 alpha=0.2, color='green', label='Above SMA50 (Bullish)')
-plt.fill_between(df.index,
-                 df['Close'], df['SMA_50'],
-                 where=(df['Close'] < df['SMA_50']),
-                 alpha=0.2, color='red', label='Below SMA50 (Bearish)')
-plt.title('Price vs SMA 50')
-plt.legend()
-plt.tight_layout()
-plt.show()
+    if window < 1:
+        logger.error("sma() window must be >= 1, got %d", window)
+        return None
 
-# --- 4. SMA Slope (Momentum) ---
-df['SMA_20_slope'] = df['SMA_20'].diff()
+    # 2. Compute SMA
+    try:
+        result = df.copy()
+        result[f"SMA_{window}"] = result[column].rolling(window=window).mean()
+        result.dropna(inplace=True)
+        return result
+    except Exception as e:
+        logger.error("sma() computation failed: %s", e)
+        return None
 
-plt.figure(figsize=(14, 4))
-plt.bar(df.index, df['SMA_20_slope'],
-        color=['green' if v >= 0 else 'red' for v in df['SMA_20_slope']],
-        alpha=0.6, label='SMA 20 Slope')
-plt.axhline(0, color='black', linewidth=0.8)
-plt.title('SMA 20 Slope (Momentum)')
-plt.legend()
-plt.tight_layout()
-plt.show()
+
+
+
+if __name__ == "__main__":
+    import yfinance as yf
+    import plotly.graph_objects as go
+    df = yf.download("RELIANCE.NS", start="2022-01-01", end="2024-12-31")
+    df.columns = df.columns.get_level_values(0)
+    df.dropna(inplace=True)
+    df20 = sma(df, window=20)
+    df50 = sma(df, window=50)
+    df200 = sma(df, window=200)
+    fig1 = go.Figure()
+    fig1.add_trace(go.Scatter(x=df.index, y=df["Close"], name="Close"))
+    fig1.add_trace(go.Scatter(x=df20.index, y=df20["SMA_20"], name="SMA 20"))
+    fig1.add_trace(go.Scatter(x=df50.index, y=df50["SMA_50"], name="SMA 50"))
+    fig1.add_trace(go.Scatter(x=df200.index, y=df200["SMA_200"], name="SMA 200"))
+    fig1.update_layout(title="RELIANCE.NS - All SMAs")
+    fig1.show()
+	# --- Graph 2: Golden Cross & Death Cross ---
+    df50 = sma(df, window=50)
+    df50["Signal"] = 0
+    df50.loc[df50["SMA_50"] < df20.loc[df50.index, "SMA_20"], "Signal"] = 1
+    df50.loc[df50["SMA_50"] > df20.loc[df50.index, "SMA_20"], "Signal"] = -1
+    df50["Crossover"] = df50["Signal"].diff()
+    golden = df50[df50["Crossover"] == 2]
+    death = df50[df50["Crossover"] == -2]
+    fig2 = go.Figure()
+    fig2.add_trace(go.Scatter(x=df.index, y=df["Close"], name="Close", opacity=0.6))
+    fig2.add_trace(go.Scatter(x=df20.index, y=df20["SMA_20"], name="SMA 20"))
+    fig2.add_trace(go.Scatter(x=df50.index, y=df50["SMA_50"], name="SMA 50"))
+    fig2.add_trace(go.Scatter(x=golden.index, y=golden["Close"], mode="markers",
+                              marker=dict(symbol="triangle-up", color="green", size=12),
+                              name="Golden Cross"))
+    fig2.add_trace(go.Scatter(x=death.index, y=death["Close"], mode="markers",
+                              marker=dict(symbol="triangle-down", color="red", size=12),
+                              name="Death Cross"))
+    fig2.update_layout(title="Golden Cross & Death Cross")
+    fig2.show()
+
+    # --- Graph 3: Price vs SMA 50 ---
+    fig3 = go.Figure()
+    fig3.add_trace(go.Scatter(x=df.index, y=df["Close"], name="Close"))
+    fig3.add_trace(go.Scatter(x=df50.index, y=df50["SMA_50"], name="SMA 50"))
+    fig3.update_layout(title="Price vs SMA 50")
+    fig3.show()
+
+    # --- Graph 4: SMA Slope ---
+    df20["SMA_20_slope"] = df20["SMA_20"].diff()
+    colors = ["green" if v >= 0 else "red" for v in df20["SMA_20_slope"]]
+    fig4 = go.Figure()
+    fig4.add_trace(go.Bar(x=df20.index, y=df20["SMA_20_slope"],
+                          marker_color=colors, name="SMA 20 Slope"))
+    fig4.update_layout(title="SMA 20 Slope (Momentum)")
+    fig4.show()
