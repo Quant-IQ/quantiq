@@ -394,7 +394,7 @@ def sma(
 if __name__ == "__main__":
     import yfinance as yf
     import plotly.graph_objects as go
-    df = yf.download("RELIANCE.NS", start="2022-01-01", end="2024-12-31")
+    df = yf.download("RELIANCE.NS", start="2022-01-01", end="2024-12-31",auto_adjust=True)
     df.columns = df.columns.get_level_values(0)
     df.dropna(inplace=True)
     df20 = sma(df, window=20)
