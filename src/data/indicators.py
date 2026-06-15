@@ -1,7 +1,8 @@
 import logging
 
 import pandas as pd
-from ta.trend import MACD
+from ta.trend import MACD, SMAIndicator
+from ta.volatility import BollingerBands
 
 # ---------------------------------------------------------------------------
 # Module-level logger — no basicConfig here; caller / __main__ configures it
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # MACD
 # ---------------------------------------------------------------------------
+
 
 def macd(
 	df: pd.DataFrame,
@@ -111,9 +113,7 @@ def macd(
 
 	# Must be a DataFrame (not a Series, dict, etc.)
 	if not isinstance(df, pd.DataFrame):
-		logger.error(
-			"macd() expected pd.DataFrame, got %s", type(df).__name__
-		)
+		logger.error("macd() expected pd.DataFrame, got %s", type(df).__name__)
 		return None
 
 	# Must be non-empty
@@ -124,8 +124,7 @@ def macd(
 	# The target price column must exist
 	if column not in df.columns:
 		logger.error(
-			"macd() could not find column '%s' in DataFrame. "
-			"Available columns: %s",
+			"macd() could not find column '%s' in DataFrame. Available columns: %s",
 			column,
 			list(df.columns),
 		)
@@ -195,14 +194,12 @@ def macd(
 		)
 
 		# Append the three standard MACD columns
-		result["MACD"]        = macd_obj.macd()         # fast EMA − slow EMA
+		result["MACD"] = macd_obj.macd()  # fast EMA − slow EMA
 		result["MACD_signal"] = macd_obj.macd_signal()  # signal (trigger) line
-		result["MACD_diff"]   = macd_obj.macd_diff()    # histogram value
+		result["MACD_diff"] = macd_obj.macd_diff()  # histogram value
 
 	except Exception as e:
-		logger.error(
-			"macd() computation failed unexpectedly: %s", e, exc_info=True
-		)
+		logger.error("macd() computation failed unexpectedly: %s", e, exc_info=True)
 		return None
 
 	# ------------------------------------------------------------------
@@ -243,6 +240,248 @@ def macd(
 # Smoke test — run with: python src/data/indicators.py
 # ---------------------------------------------------------------------------
 
+
+# Bollinger Bands
+
+
+def add_bollinger_bands(
+	df: pd.DataFrame,
+	window: int = 20,
+	window_dev: float = 2.0,
+	col: str = "Close",
+) -> pd.DataFrame:
+	"""Add Bollinger Bands (BB_upper, BB_mid, BB_lower, BB_width, BB_pct_b) to a OHLCV DataFrame.
+
+	Bollinger Bands consist of three lines built around a Simple Moving Average:
+
+	    Middle Band  = SMA(close, window)
+	    Upper Band   = Middle Band + (window_dev × rolling std-dev)
+	    Lower Band   = Middle Band - (window_dev × rolling std-dev)
+
+	Two derived columns are also computed:
+
+	    BB_width   = (Upper - Lower) / Middle
+	                 Normalised band width. Values near zero indicate a
+	                 "Bollinger Squeeze" — low volatility, possible breakout ahead.
+	                 Values that spike sharply signal high volatility expansion.
+
+	    BB_pct_b   = (Close - Lower) / (Upper - Lower)
+	                 %b ("percent b") — positions the close within the band.
+	                 > 1.0  → price above upper band (strong momentum / possible overextension)
+	                 = 1.0  → price exactly on upper band
+	                 = 0.5  → price at middle band (SMA)
+	                 = 0.0  → price exactly on lower band
+	                 < 0.0  → price below lower band (weak momentum / possible overextension)
+
+	Args:
+	    df (pd.DataFrame): OHLCV DataFrame with a DatetimeIndex.
+	        Must contain the column named by ``col``. Typically the output of
+	        ``fetch_ohlc()`` or ``fetch_batch()``, which already have
+	        ``Open``, ``High``, ``Low``, ``Close``, ``Volume``.
+	    window (int): Lookback period for the SMA and rolling standard deviation.
+	        Standard default is 20 (represents ~1 trading month of daily bars).
+	        Shorter windows (e.g. 10) react faster but produce noisier bands.
+	        Longer windows (e.g. 50) smooth the bands but lag more.
+	        Must be >= 2. Must be <= len(df), otherwise all outputs are NaN.
+	    window_dev (float): Number of standard deviations for the upper and lower bands.
+	        Standard default is 2.0, which statistically contains ~95% of price
+	        action assuming a normal distribution (Bollinger's original setting).
+	        1.0 → tighter bands, more signals, more false positives.
+	        2.5 or 3.0 → wider bands, fewer signals, higher confidence per signal.
+	        Must be > 0.
+	    col (str): Column name to use as the price series. Defaults to ``"Close"``.
+	        Can be changed to ``"Adj Close"`` or any other numeric column present
+	        in the DataFrame.
+
+	Returns:
+	    pd.DataFrame: Input DataFrame with five columns appended in-place:
+
+	        - ``BB_upper``  (float): Upper Bollinger Band.
+	        - ``BB_mid``    (float): Middle Band (SMA of ``col``).
+	        - ``BB_lower``  (float): Lower Bollinger Band.
+	        - ``BB_width``  (float): Normalised band width (BB_upper - BB_lower) / BB_mid.
+	        - ``BB_pct_b``  (float): %b — price position within the band.
+
+	    Rows with NaN in any of the five columns (the first ``window - 1`` rows)
+	    are dropped before returning. The caller receives a clean, ready-to-use
+	    DataFrame with no NaN rows in the BB columns.
+
+	Raises:
+	    KeyError: If ``col`` is not a column in ``df``.
+	    ValueError: If ``window`` < 2, ``window_dev`` <= 0, or ``df`` is empty.
+
+	Example:
+	    Basic usage with default 20-period, 2-std-dev bands::
+
+	        df = fetch_ohlc("RELIANCE.NS", period="1y", interval="1d")
+	        if df is not None:
+	            df = add_bollinger_bands(df)
+	            print(df[["Close", "BB_upper", "BB_mid", "BB_lower"]].tail())
+
+	    Custom settings — tighter 10-period bands with 1.5 std-dev::
+
+	        df = add_bollinger_bands(df, window=10, window_dev=1.5)
+
+	    Squeeze detection — identify consolidation periods::
+
+	        df = add_bollinger_bands(df)
+	        squeeze_rows = df[df["BB_width"] < df["BB_width"].quantile(0.1)]
+	        logger.info("Squeeze periods found: %d rows", len(squeeze_rows))
+
+	    %b based signal (price crossing above midline)::
+
+	        df = add_bollinger_bands(df)
+	        cross_above_mid = (df["BB_pct_b"] > 0.5) & (df["BB_pct_b"].shift(1) <= 0.5)
+	        logger.info("Mid-band upward crossovers: %d", cross_above_mid.sum())
+
+	Note:
+	    - Uses ``ta.volatility.BollingerBands`` internally, which computes the
+	      rolling std-dev with ``ddof=0`` (population std, not sample std).
+	      This matches John Bollinger's original specification.
+	    - BB_pct_b will produce a ZeroDivisionError-equivalent (NaN) on any row
+	      where Upper == Lower (i.e. zero volatility). This is handled silently
+	      by pandas division; such rows are dropped by the final ``dropna``.
+	    - Bollinger Bands are a lagging indicator — the first valid row appears
+	      at index position ``window - 1``. Always verify ``len(df)`` is
+	      substantially greater than ``window`` before calling.
+	    - Never interpret band touch alone as a signal. Always combine with
+	      momentum indicators (RSI, MACD) and trend context. See research notes
+	      in ``docs/`` for the BB + MACD combined strategy.
+	"""
+	# ------------------------------------------------------------------ #
+	# 1. Input validation                                                   #
+	# ------------------------------------------------------------------ #
+
+	if df.empty:
+		raise ValueError("DataFrame is empty — cannot compute Bollinger Bands.")
+
+	if col not in df.columns:
+		raise KeyError(
+			f"Column '{col}' not found in DataFrame. "
+			f"Available columns: {list(df.columns)}"
+		)
+
+	if window < 2:
+		raise ValueError(
+			f"window must be >= 2, got {window}. "
+			"Bollinger Bands require at least 2 data points for std-dev."
+		)
+
+	if window_dev <= 0:
+		raise ValueError(
+			f"window_dev must be > 0, got {window_dev}. "
+			"Standard deviation multiplier cannot be zero or negative."
+		)
+
+	if len(df) < window:
+		# Not a hard error — but all outputs will be NaN and then dropped,
+		# leaving an empty DataFrame. Log a prominent warning so the caller
+		# knows why they got nothing back.
+		logger.warning(
+			"DataFrame has only %d rows but window=%d — "
+			"all Bollinger Band values will be NaN after dropna. "
+			"Fetch more data or reduce window.",
+			len(df),
+			window,
+		)
+
+	logger.info(
+		"Computing Bollinger Bands for %d rows | window=%d | window_dev=%.1f | col=%s",
+		len(df),
+		window,
+		window_dev,
+		col,
+	)
+
+	# ------------------------------------------------------------------ #
+	# 2. Compute bands via ta.volatility.BollingerBands                    #
+	#                                                                       #
+	# BollingerBands internally computes:                                   #
+	#   middle = close.rolling(window).mean()                               #
+	#   std    = close.rolling(window).std(ddof=0)  ← population std        #
+	#   upper  = middle + (window_dev * std)                                #
+	#   lower  = middle - (window_dev * std)                                #
+	# ------------------------------------------------------------------ #
+
+	bb = BollingerBands(
+		close=df[col],
+		window=window,
+		window_dev=window_dev,
+	)
+
+	df["BB_upper"] = bb.bollinger_hband()  # Upper band
+	df["BB_mid"] = bb.bollinger_mavg()  # Middle band (SMA)
+	df["BB_lower"] = bb.bollinger_lband()  # Lower band
+
+	# ------------------------------------------------------------------ #
+	# 3. Derived metrics                                                    #
+	# ------------------------------------------------------------------ #
+
+	# BB_width: normalised distance between bands relative to the midpoint.
+	# Formula: (Upper - Lower) / Middle
+	# This makes the width scale-independent — comparable across different
+	# price levels and tickers. A squeeze is visible as a multi-period
+	# trough in BB_width.
+	df["BB_width"] = (df["BB_upper"] - df["BB_lower"]) / df["BB_mid"]
+
+	# BB_pct_b: %b — where within the band the close sits.
+	# Formula: (Close - Lower) / (Upper - Lower)
+	# Values > 1 or < 0 mean price has broken outside the bands.
+	# When Upper == Lower (zero volatility edge case), the result is NaN —
+	# pandas division by zero yields NaN silently; handled by dropna below.
+	df["BB_pct_b"] = (df[col] - df["BB_lower"]) / (df["BB_upper"] - df["BB_lower"])
+
+	# ------------------------------------------------------------------ #
+	# 4. Drop NaN rows produced by the rolling window warm-up period        #
+	#                                                                       #
+	# The first (window - 1) rows have no valid SMA yet, so BB_upper,       #
+	# BB_mid, BB_lower, BB_width, and BB_pct_b are all NaN. Drop them        #
+	# before returning so the caller gets a clean DataFrame ready for        #
+	# signal generation or backtesting.                                      #
+	# ------------------------------------------------------------------ #
+
+	rows_before = len(df)
+	df.dropna(
+		subset=["BB_upper", "BB_mid", "BB_lower", "BB_width", "BB_pct_b"], inplace=True
+	)
+	rows_dropped = rows_before - len(df)
+
+	if rows_dropped > 0:
+		logger.debug(
+			"Dropped %d NaN warm-up rows (window=%d). Remaining rows: %d",
+			rows_dropped,
+			window,
+			len(df),
+		)
+
+	if df.empty:
+		logger.warning(
+			"DataFrame is empty after dropna — all rows were NaN. "
+			"This usually means len(df) < window (%d). Fetch more data.",
+			window,
+		)
+		return df
+
+	# ------------------------------------------------------------------ #
+	# 5. Summary log — quick sanity check on the output                    #
+	# ------------------------------------------------------------------ #
+
+	last = df.iloc[-1]
+	logger.info(
+		"Bollinger Bands computed — latest bar | "
+		"Close=%.2f | BB_upper=%.2f | BB_mid=%.2f | BB_lower=%.2f | "
+		"BB_width=%.4f | BB_pct_b=%.4f",
+		last[col],
+		last["BB_upper"],
+		last["BB_mid"],
+		last["BB_lower"],
+		last["BB_width"],
+		last["BB_pct_b"],
+	)
+
+	return df
+
+
 if __name__ == "__main__":
 	import sys
 
@@ -274,8 +513,11 @@ if __name__ == "__main__":
 				result.shape,
 				list(result.columns),
 			)
-			logger.info("Last 3 rows:\n%s",
-				result[["Close", "MACD", "MACD_signal", "MACD_diff"]].tail(3).to_string()
+			logger.info(
+				"Last 3 rows:\n%s",
+				result[["Close", "MACD", "MACD_signal", "MACD_diff"]]
+				.tail(3)
+				.to_string(),
 			)
 		else:
 			logger.error("FAILED — macd() returned None on valid input")
@@ -316,253 +558,78 @@ if __name__ == "__main__":
 	logger.info("PASSED — returned None for None input")
 
 	# ---- Test 7: Custom parameters ----
-	logger.info("Test 7 — custom parameters (window_slow=20, window_fast=8, window_sign=6)")
+	logger.info(
+		"Test 7 — custom parameters (window_slow=20, window_fast=8, window_sign=6)"
+	)
 	if df is not None:
 		result_custom = macd(df, window_slow=20, window_fast=8, window_sign=6)
 		if result_custom is not None:
-			logger.info(
-				"PASSED — custom params shape: %s", result_custom.shape
-			)
+			logger.info("PASSED — custom params shape: %s", result_custom.shape)
 		else:
 			logger.error("FAILED — macd() returned None on custom valid params")
 
+	# ---- Test 8: Bollinger Bands normal path ----
+	logger.info("--- Smoke test: Bollinger Bands indicator ---")
+	logger.info("Test 1 — normal path: RELIANCE.NS, 1y daily")
+	if df is not None:
+		result_bb = add_bollinger_bands(df)
+		if result_bb is not None:
+			logger.info(
+				"PASSED — shape: %s, columns: %s",
+				result_bb.shape,
+				list(result_bb.columns),
+			)
+			logger.info(
+				"Last 3 rows:\n%s",
+				result_bb[["Close", "BB_upper", "BB_mid", "BB_lower"]]
+				.tail(3)
+				.to_string(),
+			)
+		else:
+			logger.error("FAILED — add_bollinger_bands() returned None on valid input")
+	else:
+		logger.warning("Skipping Bollinger Bands Test 1 — fetch returned None")
+
+	# ---- Test 9: Bollinger Bands empty DataFrame ----
+	logger.info("Test 2 — empty DataFrame input")
+	try:
+		result_bb_empty = add_bollinger_bands(pd.DataFrame())
+		if result_bb_empty is None or result_bb_empty.empty:
+			logger.info("PASSED — returned None or empty DataFrame for empty input")
+		else:
+			logger.warning(
+				"Bollinger Bands test returned non-empty result for empty input"
+			)
+	except ValueError as e:
+		logger.info("PASSED — correctly raised ValueError for empty input: %s", e)
+
+	# ---- Test 10: Bollinger Bands missing Close column ----
+	logger.info("Test 3 — missing 'Close' column")
+	df_no_close_bb = pd.DataFrame({"Open": [100, 101], "High": [102, 103]})
+	try:
+		result_bb_no_close = add_bollinger_bands(df_no_close_bb)
+		if result_bb_no_close is None or result_bb_no_close.empty:
+			logger.info(
+				"PASSED — returned None or empty DataFrame for missing Close column"
+			)
+		else:
+			logger.warning(
+				"Bollinger Bands test returned result despite missing Close column"
+			)
+	except (ValueError, KeyError) as e:
+		logger.info(
+			"PASSED — correctly raised exception for missing Close column: %s", e
+		)
+
+	# ---- Test 11: Bollinger Bands custom window ----
+	logger.info("Test 4 — custom window (window=10)")
+	if df is not None:
+		result_bb_custom = add_bollinger_bands(df, window=10)
+		if result_bb_custom is not None:
+			logger.info("PASSED — custom window shape: %s", result_bb_custom.shape)
+		else:
+			logger.error(
+				"FAILED — add_bollinger_bands() returned None on custom valid params"
+			)
+
 	logger.info("--- Smoke test complete ---")
-
-
-#Bolliger Bands
-
-
-def add_bollinger_bands(
-    df: pd.DataFrame,
-    window: int = 20,
-    window_dev: float = 2.0,
-    col: str = "Close",
-) -> pd.DataFrame:
-    """Add Bollinger Bands (BB_upper, BB_mid, BB_lower, BB_width, BB_pct_b) to a OHLCV DataFrame.
-
-    Bollinger Bands consist of three lines built around a Simple Moving Average:
-
-        Middle Band  = SMA(close, window)
-        Upper Band   = Middle Band + (window_dev × rolling std-dev)
-        Lower Band   = Middle Band - (window_dev × rolling std-dev)
-
-    Two derived columns are also computed:
-
-        BB_width   = (Upper - Lower) / Middle
-                     Normalised band width. Values near zero indicate a
-                     "Bollinger Squeeze" — low volatility, possible breakout ahead.
-                     Values that spike sharply signal high volatility expansion.
-
-        BB_pct_b   = (Close - Lower) / (Upper - Lower)
-                     %b ("percent b") — positions the close within the band.
-                     > 1.0  → price above upper band (strong momentum / possible overextension)
-                     = 1.0  → price exactly on upper band
-                     = 0.5  → price at middle band (SMA)
-                     = 0.0  → price exactly on lower band
-                     < 0.0  → price below lower band (weak momentum / possible overextension)
-
-    Args:
-        df (pd.DataFrame): OHLCV DataFrame with a DatetimeIndex.
-            Must contain the column named by ``col``. Typically the output of
-            ``fetch_ohlc()`` or ``fetch_batch()``, which already have
-            ``Open``, ``High``, ``Low``, ``Close``, ``Volume``.
-        window (int): Lookback period for the SMA and rolling standard deviation.
-            Standard default is 20 (represents ~1 trading month of daily bars).
-            Shorter windows (e.g. 10) react faster but produce noisier bands.
-            Longer windows (e.g. 50) smooth the bands but lag more.
-            Must be >= 2. Must be <= len(df), otherwise all outputs are NaN.
-        window_dev (float): Number of standard deviations for the upper and lower bands.
-            Standard default is 2.0, which statistically contains ~95% of price
-            action assuming a normal distribution (Bollinger's original setting).
-            1.0 → tighter bands, more signals, more false positives.
-            2.5 or 3.0 → wider bands, fewer signals, higher confidence per signal.
-            Must be > 0.
-        col (str): Column name to use as the price series. Defaults to ``"Close"``.
-            Can be changed to ``"Adj Close"`` or any other numeric column present
-            in the DataFrame.
-
-    Returns:
-        pd.DataFrame: Input DataFrame with five columns appended in-place:
-
-            - ``BB_upper``  (float): Upper Bollinger Band.
-            - ``BB_mid``    (float): Middle Band (SMA of ``col``).
-            - ``BB_lower``  (float): Lower Bollinger Band.
-            - ``BB_width``  (float): Normalised band width (BB_upper - BB_lower) / BB_mid.
-            - ``BB_pct_b``  (float): %b — price position within the band.
-
-        Rows with NaN in any of the five columns (the first ``window - 1`` rows)
-        are dropped before returning. The caller receives a clean, ready-to-use
-        DataFrame with no NaN rows in the BB columns.
-
-    Raises:
-        KeyError: If ``col`` is not a column in ``df``.
-        ValueError: If ``window`` < 2, ``window_dev`` <= 0, or ``df`` is empty.
-
-    Example:
-        Basic usage with default 20-period, 2-std-dev bands::
-
-            df = fetch_ohlc("RELIANCE.NS", period="1y", interval="1d")
-            if df is not None:
-                df = add_bollinger_bands(df)
-                print(df[["Close", "BB_upper", "BB_mid", "BB_lower"]].tail())
-
-        Custom settings — tighter 10-period bands with 1.5 std-dev::
-
-            df = add_bollinger_bands(df, window=10, window_dev=1.5)
-
-        Squeeze detection — identify consolidation periods::
-
-            df = add_bollinger_bands(df)
-            squeeze_rows = df[df["BB_width"] < df["BB_width"].quantile(0.1)]
-            logger.info("Squeeze periods found: %d rows", len(squeeze_rows))
-
-        %b based signal (price crossing above midline)::
-
-            df = add_bollinger_bands(df)
-            cross_above_mid = (df["BB_pct_b"] > 0.5) & (df["BB_pct_b"].shift(1) <= 0.5)
-            logger.info("Mid-band upward crossovers: %d", cross_above_mid.sum())
-
-    Note:
-        - Uses ``ta.volatility.BollingerBands`` internally, which computes the
-          rolling std-dev with ``ddof=0`` (population std, not sample std).
-          This matches John Bollinger's original specification.
-        - BB_pct_b will produce a ZeroDivisionError-equivalent (NaN) on any row
-          where Upper == Lower (i.e. zero volatility). This is handled silently
-          by pandas division; such rows are dropped by the final ``dropna``.
-        - Bollinger Bands are a lagging indicator — the first valid row appears
-          at index position ``window - 1``. Always verify ``len(df)`` is
-          substantially greater than ``window`` before calling.
-        - Never interpret band touch alone as a signal. Always combine with
-          momentum indicators (RSI, MACD) and trend context. See research notes
-          in ``docs/`` for the BB + MACD combined strategy.
-    """
-    # ------------------------------------------------------------------ #
-    # 1. Input validation                                                   #
-    # ------------------------------------------------------------------ #
-
-    if df.empty:
-        raise ValueError("DataFrame is empty — cannot compute Bollinger Bands.")
-
-    if col not in df.columns:
-        raise KeyError(
-            f"Column '{col}' not found in DataFrame. "
-            f"Available columns: {list(df.columns)}"
-        )
-
-    if window < 2:
-        raise ValueError(
-            f"window must be >= 2, got {window}. "
-            "Bollinger Bands require at least 2 data points for std-dev."
-        )
-
-    if window_dev <= 0:
-        raise ValueError(
-            f"window_dev must be > 0, got {window_dev}. "
-            "Standard deviation multiplier cannot be zero or negative."
-        )
-
-    if len(df) < window:
-        # Not a hard error — but all outputs will be NaN and then dropped,
-        # leaving an empty DataFrame. Log a prominent warning so the caller
-        # knows why they got nothing back.
-        logger.warning(
-            "DataFrame has only %d rows but window=%d — "
-            "all Bollinger Band values will be NaN after dropna. "
-            "Fetch more data or reduce window.",
-            len(df),
-            window,
-        )
-
-    logger.info(
-        "Computing Bollinger Bands for %d rows | window=%d | window_dev=%.1f | col=%s",
-        len(df),
-        window,
-        window_dev,
-        col,
-    )
-
-    # ------------------------------------------------------------------ #
-    # 2. Compute bands via ta.volatility.BollingerBands                    #
-    #                                                                       #
-    # BollingerBands internally computes:                                   #
-    #   middle = close.rolling(window).mean()                               #
-    #   std    = close.rolling(window).std(ddof=0)  ← population std        #
-    #   upper  = middle + (window_dev * std)                                #
-    #   lower  = middle - (window_dev * std)                                #
-    # ------------------------------------------------------------------ #
-
-    bb = BollingerBands(
-        close=df[col],
-        window=window,
-        window_dev=window_dev,
-    )
-
-    df["BB_upper"] = bb.bollinger_hband()   # Upper band
-    df["BB_mid"]   = bb.bollinger_mavg()    # Middle band (SMA)
-    df["BB_lower"] = bb.bollinger_lband()   # Lower band
-
-    # ------------------------------------------------------------------ #
-    # 3. Derived metrics                                                    #
-    # ------------------------------------------------------------------ #
-
-    # BB_width: normalised distance between bands relative to the midpoint.
-    # Formula: (Upper - Lower) / Middle
-    # This makes the width scale-independent — comparable across different
-    # price levels and tickers. A squeeze is visible as a multi-period
-    # trough in BB_width.
-    df["BB_width"] = (df["BB_upper"] - df["BB_lower"]) / df["BB_mid"]
-
-    # BB_pct_b: %b — where within the band the close sits.
-    # Formula: (Close - Lower) / (Upper - Lower)
-    # Values > 1 or < 0 mean price has broken outside the bands.
-    # When Upper == Lower (zero volatility edge case), the result is NaN —
-    # pandas division by zero yields NaN silently; handled by dropna below.
-    df["BB_pct_b"] = (df[col] - df["BB_lower"]) / (df["BB_upper"] - df["BB_lower"])
-
-    # ------------------------------------------------------------------ #
-    # 4. Drop NaN rows produced by the rolling window warm-up period        #
-    #                                                                       #
-    # The first (window - 1) rows have no valid SMA yet, so BB_upper,       #
-    # BB_mid, BB_lower, BB_width, and BB_pct_b are all NaN. Drop them        #
-    # before returning so the caller gets a clean DataFrame ready for        #
-    # signal generation or backtesting.                                      #
-    # ------------------------------------------------------------------ #
-
-    rows_before = len(df)
-    df.dropna(subset=["BB_upper", "BB_mid", "BB_lower", "BB_width", "BB_pct_b"], inplace=True)
-    rows_dropped = rows_before - len(df)
-
-    if rows_dropped > 0:
-        logger.debug(
-            "Dropped %d NaN warm-up rows (window=%d). Remaining rows: %d",
-            rows_dropped,
-            window,
-            len(df),
-        )
-
-    if df.empty:
-        logger.warning(
-            "DataFrame is empty after dropna — all rows were NaN. "
-            "This usually means len(df) < window (%d). Fetch more data.",
-            window,
-        )
-        return df
-
-    # ------------------------------------------------------------------ #
-    # 5. Summary log — quick sanity check on the output                    #
-    # ------------------------------------------------------------------ #
-
-    last = df.iloc[-1]
-    logger.info(
-        "Bollinger Bands computed — latest bar | "
-        "Close=%.2f | BB_upper=%.2f | BB_mid=%.2f | BB_lower=%.2f | "
-        "BB_width=%.4f | BB_pct_b=%.4f",
-        last[col],
-        last["BB_upper"],
-        last["BB_mid"],
-        last["BB_lower"],
-        last["BB_width"],
-        last["BB_pct_b"],
-    )
-
-    return df
