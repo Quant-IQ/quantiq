@@ -163,3 +163,122 @@ if __name__ == "__main__":
 	vol_fig = volume_chart(mock_df)
 	logger.info("Volume chart validation successful: %s", type(vol_fig))
 	logger.info("All visualization module smoke tests completed successfully!")
+
+def plot_ohlc(df: pd.DataFrame) -> go.Figure | None:
+    """
+    Build an interactive Plotly candlestick chart with toggleable technical indicators.
+
+    Expects a pandas DataFrame indexed by Datetime with specific baseline metrics
+    already calculated by the technical indicator pipeline.
+
+    Args:
+        df (pd.DataFrame): Financial time series containing 'Open', 'High',
+                           'Low', 'Close' and indicator columns.
+
+    Returns:
+        go.Figure | None: A fully configured Plotly figure object, or None
+                          if critical price columns are missing or empty.
+    """
+    try:
+        # Check for critical price columns before attempting to map visual traces
+        required_cols = ["Open", "High", "Low", "Close"]
+        if not all(col in df.columns for col in required_cols):
+            logger.error("Data integrity failure: Missing core OHLC columns in DataFrame.")
+            return None
+
+        if df.empty:
+            logger.warning("Empty DataFrame passed to plot_ohlc pipeline.")
+            return None
+
+        # Synchronize datetime indexing
+        if not isinstance(df.index, pd.DatetimeIndex):
+            df.index = pd.to_datetime(df.index)
+
+        fig = go.Figure()
+
+        # 1. Base Candlestick Layer (Always Visible index tracking: 0)
+        fig.add_trace(
+            go.Candlestick(
+                x=df.index,
+                open=df["Open"],
+                high=df["High"],
+                low=df["Low"],
+                close=df["Close"],
+                name="OHLC Price"
+            )
+        )
+
+        # Technical Indicator Overlays — Checks column mapping safely
+        if "SMA" in df.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=df.index, y=df["SMA"],
+                    mode="lines", line=dict(color="orange", width=1.5),
+                    name="SMA", visible=True
+                )
+            )
+
+        if "EMA" in df.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=df.index, y=df["EMA"],
+                    mode="lines", line=dict(color="#1f77b4", width=1.5),
+                    name="EMA", visible=True
+                )
+            )
+
+        if "BB_Upper" in df.columns and "BB_Lower" in df.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=df.index, y=df["BB_Upper"],
+                    mode="lines", line=dict(color="rgba(231, 76, 60, 0.5)", width=1, dash="dash"),
+                    name="BB Upper", visible=True
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=df.index, y=df["BB_Lower"],
+                    mode="lines", line=dict(color="rgba(231, 76, 60, 0.5)", width=1, dash="dash"),
+                    name="BB Lower", visible=True
+                )
+            )
+
+        # 2. Layout Layout & Button Toggle Settings (Plotly Dark Theme Match)
+        total_traces = len(fig.data)
+
+        fig.update_layout(
+            title="QuantIQ | Dynamic Price Action & Technical Overlays",
+            yaxis_title="Stock Price (INR)",
+            xaxis_title="Timeline / Date",
+            xaxis_rangeslider_visible=True,
+            template="plotly_dark",
+            height=700,
+            width=1000,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            updatemenus=[
+                dict(
+                    type="buttons",
+                    direction="right",
+                    active=0,
+                    x=0.01,
+                    y=1.12,
+                    buttons=list([
+                        dict(
+                            label="Show All Overlays",
+                            method="update",
+                            args=[{"visible": [True] * total_traces}]
+                        ),
+                        dict(
+                            label="Price Action Only",
+                            method="update",
+                            args=[{"visible": [True] + [False] * (total_traces - 1)}]
+                        )
+                    ]),
+                )
+            ]
+        )
+        return fig
+
+    except Exception as e:
+        logger.error("Visualisation crash caught inside plot_ohlc module: %s", e)
+        return None
