@@ -1,7 +1,15 @@
+"""
+Technical indicators module.
+
+Owner: AV
+File: src/data/indicators.py
+Phase: Phase-3
+"""
+
 import logging
 
 import pandas as pd
-from ta.trend import MACD, SMAIndicator
+from ta.trend import MACD, EMAIndicator, SMAIndicator
 from ta.volatility import BollingerBands
 
 # ---------------------------------------------------------------------------
@@ -237,6 +245,82 @@ def macd(
 
 
 # ---------------------------------------------------------------------------
+# EMA
+# ---------------------------------------------------------------------------
+def ema(close: pd.Series, window: int) -> pd.Series | None:
+	"""
+	Calculate Exponential Moving Average (EMA).
+
+	Args:
+		close (pd.Series): Series containing closing prices.
+		window (int): EMA lookback period. Must be greater than 0.
+
+	Returns:
+		pd.Series | None: EMA values with NaN rows removed.
+		The returned Series has a shorter index than the input because
+		the first (window - 1) rows are dropped after EMA calculation.
+		Returns None if validation or computation fails.
+	"""
+
+	# Input validation
+	if close is None:
+		logger.error("ema() received None as input")
+		return None
+
+	if not isinstance(close, pd.Series):
+		logger.error(
+			"ema() expected pd.Series, got %s",
+			type(close).__name__,
+		)
+		return None
+
+	if close.empty:
+		logger.warning("ema() received an empty Series")
+		return None
+
+	if not isinstance(window, int) or window <= 0:
+		logger.error(
+			"ema() parameter 'window' must be a positive integer, got %r",
+			window,
+		)
+		return None
+
+	try:
+		logger.info(
+			"Computing EMA for %d rows (window=%d)",
+			len(close),
+			window,
+		)
+
+		# Defensive squeeze for callers that may pass df[['Close']]
+		close = pd.Series(close.squeeze())
+
+		ema_series = EMAIndicator(
+			close=close,
+			window=window,
+		).ema_indicator()
+
+		ema_series = ema_series.dropna()
+
+		if ema_series.empty:
+			logger.warning("ema() produced an empty result after dropna()")
+			return None
+
+		logger.info(
+			"EMA computed successfully — %d usable rows",
+			len(ema_series),
+		)
+
+		return ema_series
+
+	except Exception as e:
+		logger.error(
+			"ema() computation failed unexpectedly: %s",
+			e,
+			exc_info=True,
+		)
+		return None
+
 # SMA Indicator
 # ---------------------------------------------------------------------------
 
@@ -890,4 +974,49 @@ if __name__ == "__main__":
 				"FAILED — add_bollinger_bands() returned None on custom valid params"
 			)
 
+	logger.info("--- Smoke test complete ---")
+
+	# ---------------------------------------------------------------------------
+	# EMA Smoke Tests
+	# ---------------------------------------------------------------------------
+
+	logger.info("--- Smoke test: EMA indicator ---")
+
+	# ---- Test 1: Normal path ----
+	logger.info("Test 1 — EMA normal path")
+
+	sample_close = pd.Series([100, 101, 102, 103, 104, 105, 106, 107, 108, 109])
+
+	ema_result = ema(sample_close, window=3)
+
+	if ema_result is not None:
+		logger.info("PASSED — EMA rows=%d", len(ema_result))
+	else:
+		logger.error("FAILED — ema() returned None")
+
+	# ---- Test 2: Empty Series ----
+	logger.info("Test 2 — empty Series")
+
+	result_empty = ema(pd.Series(dtype=float), window=3)
+	assert result_empty is None
+
+	logger.info("PASSED — returned None for empty Series")
+
+	# ---- Test 3: Invalid Window ----
+	logger.info("Test 3 — invalid window")
+
+	result_invalid = ema(sample_close, window=0)
+	assert result_invalid is None
+
+	logger.info("PASSED — returned None for invalid window")
+
+	# ---- Test 4: None Input ----
+	logger.info("Test 4 — None input")
+
+	result_none = ema(None, window=3)  # type: ignore[arg-type]
+	assert result_none is None
+
+	logger.info("PASSED — returned None for None input")
+
+	logger.info("--- EMA smoke test complete ---")
 	logger.info("--- All smoke tests complete ---")
