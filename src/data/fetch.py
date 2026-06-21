@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -59,9 +59,43 @@ def _is_stale(path: Path, interval: str) -> bool:
 	"""
 	if not path.exists():
 		return True
-	age = datetime.now() - datetime.fromtimestamp(path.stat().st_mtime)
-	threshold = timedelta(hours=1) if interval in _INTRADAY_INTERVALS else timedelta(days=1)
+	mtime = path.stat().st_mtime
+	age = datetime.now(tz=timezone.utc) - datetime.fromtimestamp(mtime, tz=timezone.utc)
+	threshold = (
+		timedelta(hours=1) if interval in _INTRADAY_INTERVALS else timedelta(days=1)
+	)
 	return age > threshold
+
+
+def _process_raw(raw: pd.DataFrame, ticker: str) -> pd.DataFrame | None:
+	"""Collapse MultiIndex columns, slice to OHLCV, and drop NaN rows.
+
+	Shared post-download processing for both fetch_ohlc() and fetch_batch().
+	Returns None if the result is empty after cleaning.
+
+	Args:
+		raw (pd.DataFrame): Raw DataFrame from yfinance (single-ticker string call).
+		ticker (str): Ticker name — used only for log messages.
+
+	Returns:
+		pd.DataFrame | None: Clean OHLCV DataFrame, or None if empty after dropna.
+	"""
+	if raw is None or raw.empty:
+		logger.warning("_process_raw: empty input for %s", ticker)
+		return None
+
+	if isinstance(raw.columns, pd.MultiIndex):
+		raw = raw.copy()
+		raw.columns = raw.columns.get_level_values(0)  # type: ignore[assignment]
+
+	df = raw[["Open", "High", "Low", "Close", "Volume"]].copy()
+	df.dropna(inplace=True)
+
+	if df.empty:
+		logger.warning("_process_raw: empty DataFrame after dropna for %s", ticker)
+		return None
+
+	return df
 
 
 def fetch_ohlc(
@@ -153,7 +187,10 @@ def fetch_ohlc(
 			df = pd.read_parquet(cache_file)
 			logger.info(
 				"Cache hit for %s (period=%s, interval=%s) — %d rows",
-				ticker, period, interval, len(df),
+				ticker,
+				period,
+				interval,
+				len(df),
 			)
 			return df
 		except Exception as e:
@@ -171,18 +208,12 @@ def fetch_ohlc(
 		logger.error("yfinance download failed for %s: %s", ticker, e)
 		return None
 
-	if raw is None or raw.empty:
+	df = _process_raw(raw, ticker)
+	if df is None:
 		logger.warning(
 			"yfinance returned empty DataFrame for %s (period=%s)", ticker, period
 		)
 		return None
-
-	# yfinance MultiIndex column collapse: keep only OHLCV columns
-	if isinstance(raw.columns, pd.MultiIndex):
-		raw.columns = raw.columns.get_level_values(0)  # type: ignore[assignment]
-
-	df = raw[["Open", "High", "Low", "Close", "Volume"]].copy()
-	df.dropna(inplace=True)
 
 	if use_cache:
 		try:
@@ -193,7 +224,10 @@ def fetch_ohlc(
 
 	logger.info(
 		"Fetched %d rows for %s (period=%s, interval=%s)",
-		len(df), ticker, period, interval,
+		len(df),
+		ticker,
+		period,
+		interval,
 	)
 	return df
 
@@ -289,7 +323,6 @@ def fetch_batch(
 				interval=interval,
 				auto_adjust=True,
 				progress=False,
-				group_by="ticker",
 			)
 	except Exception as e:
 		logger.error("yfinance batch download failed: %s", e)
@@ -299,41 +332,30 @@ def fetch_batch(
 
 	for ticker in misses:
 		try:
+			if raw is None:
+				result[ticker] = None
+				continue
+
 			if len(misses) == 1:
-				df_raw = raw
+				df_raw: pd.DataFrame = raw  # type: ignore[assignment]
 			else:
-				top_level = raw.columns.get_level_values(0)
-				if ticker not in top_level:
+				ticker_level = raw.columns.get_level_values(1)
+				if ticker not in ticker_level:
 					logger.warning("Ticker %s absent from batch result", ticker)
 					result[ticker] = None
 					continue
-				df_raw = raw[ticker]
+				df_raw = raw.xs(ticker, axis=1, level=1)  # type: ignore[assignment]
 
-			if df_raw is None or df_raw.empty:
-				logger.warning("Empty result for %s in batch download", ticker)
-				result[ticker] = None
-				continue
+			result[ticker] = _process_raw(df_raw, ticker)
+			if result[ticker] is not None:
+				logger.info("Fetched %d rows for %s", len(result[ticker]), ticker)  # type: ignore[arg-type]
 
-			if isinstance(df_raw.columns, pd.MultiIndex):
-				df_raw.columns = df_raw.columns.get_level_values(0)  # type: ignore[assignment]
-
-			df = df_raw[["Open", "High", "Low", "Close", "Volume"]].copy()
-			df.dropna(inplace=True)
-
-			if df.empty:
-				logger.warning("Empty DataFrame after dropna for %s", ticker)
-				result[ticker] = None
-				continue
-
-			if use_cache:
+			if use_cache and result[ticker] is not None:
 				try:
 					_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-					df.to_parquet(_cache_path(ticker, period, interval))
+					result[ticker].to_parquet(_cache_path(ticker, period, interval))  # type: ignore[union-attr]
 				except Exception as e:
 					logger.warning("Cache write failed for %s: %s", ticker, e)
-
-			result[ticker] = df
-			logger.info("Fetched %d rows for %s", len(df), ticker)
 
 		except Exception as e:
 			logger.warning("Failed to process %s from batch result: %s", ticker, e)
