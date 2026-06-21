@@ -1,16 +1,9 @@
-"""
-Technical indicators module.
-
-Owner: AV
-File: src/data/indicators.py
-Phase: Phase-3
-"""
-
 import logging
 
 import pandas as pd
+from ta.momentum import RSIIndicator
 from ta.trend import MACD, EMAIndicator, SMAIndicator
-from ta.volatility import BollingerBands
+from ta.volatility import AverageTrueRange, BollingerBands
 
 # ---------------------------------------------------------------------------
 # Module-level logger — no basicConfig here; caller / __main__ configures it
@@ -23,7 +16,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def macd(
+def movingAverageConvergenceDivergence(
 	df: pd.DataFrame,
 	window_slow: int = 26,
 	window_fast: int = 12,
@@ -73,26 +66,26 @@ def macd(
 	    Basic usage with a pre-fetched DataFrame::
 
 	        from src.data.fetch import fetch_ohlc
-	        from src.data.indicators import macd
+	        from src.data.indicators import movingAverageConvergenceDivergence
 
 	        df = fetch_ohlc("RELIANCE.NS", period="1y", interval="1d")
 	        if df is not None:
-	            df_macd = macd(df)
+	            df_macd = movingAverageConvergenceDivergence(df)
 	            if df_macd is not None:
 	                print(df_macd[["Close", "MACD", "MACD_signal", "MACD_diff"]].tail())
 
 	    Custom parameters (e.g. faster settings for intraday)::
 
-	        df_macd = macd(df, window_slow=20, window_fast=8, window_sign=6)
+	        df_macd = movingAverageConvergenceDivergence(df, window_slow=20, window_fast=8, window_sign=6)
 
 	    Chaining with other indicators (all return copies, so safe to chain)::
 
-	        df_with_macd = macd(df)
+	        df_with_macd = movingAverageConvergenceDivergence(df)
 	        # pass df_with_macd into the next indicator function
 
 	    Guard against None before accessing columns::
 
-	        result = macd(df)
+	        result = movingAverageConvergenceDivergence(df)
 	        if result is None:
 	            logger.warning("MACD computation failed — skipping this ticker")
 	            # handle gracefully, e.g. skip this ticker in a screener loop
@@ -115,24 +108,29 @@ def macd(
 	# Reject None input explicitly so the error message is actionable
 	if df is None:
 		logger.error(
-			"macd() received None as input — pass a DataFrame from fetch_ohlc()"
+			"movingAverageConvergenceDivergence() received None as input — pass a DataFrame from fetch_ohlc()"
 		)
 		return None
 
 	# Must be a DataFrame (not a Series, dict, etc.)
 	if not isinstance(df, pd.DataFrame):
-		logger.error("macd() expected pd.DataFrame, got %s", type(df).__name__)
+		logger.error(
+			"movingAverageConvergenceDivergence() expected pd.DataFrame, got %s",
+			type(df).__name__,
+		)
 		return None
 
 	# Must be non-empty
 	if df.empty:
-		logger.warning("macd() received an empty DataFrame — nothing to compute")
+		logger.warning(
+			"movingAverageConvergenceDivergence() received an empty DataFrame — nothing to compute"
+		)
 		return None
 
 	# The target price column must exist
 	if column not in df.columns:
 		logger.error(
-			"macd() could not find column '%s' in DataFrame. Available columns: %s",
+			"movingAverageConvergenceDivergence() could not find column '%s' in DataFrame. Available columns: %s",
 			column,
 			list(df.columns),
 		)
@@ -141,7 +139,7 @@ def macd(
 	# window_fast must be strictly less than window_slow — standard MACD contract
 	if window_fast >= window_slow:
 		logger.error(
-			"macd() requires window_fast (%d) < window_slow (%d). "
+			"movingAverageConvergenceDivergence() requires window_fast (%d) < window_slow (%d). "
 			"Received equal or inverted values — check your parameters.",
 			window_fast,
 			window_slow,
@@ -156,7 +154,7 @@ def macd(
 	]:
 		if not isinstance(value, int) or value <= 0:
 			logger.error(
-				"macd() parameter '%s' must be a positive integer, got %r",
+				"movingAverageConvergenceDivergence() parameter '%s' must be a positive integer, got %r",
 				name,
 				value,
 			)
@@ -167,7 +165,7 @@ def macd(
 	min_rows = window_slow + window_sign - 1
 	if len(df) < min_rows:
 		logger.warning(
-			"macd() needs at least %d rows for window_slow=%d + window_sign=%d "
+			"movingAverageConvergenceDivergence() needs at least %d rows for window_slow=%d + window_sign=%d "
 			"but DataFrame only has %d rows. Returning None.",
 			min_rows,
 			window_slow,
@@ -207,7 +205,11 @@ def macd(
 		result["MACD_diff"] = macd_obj.macd_diff()  # histogram value
 
 	except Exception as e:
-		logger.error("macd() computation failed unexpectedly: %s", e, exc_info=True)
+		logger.error(
+			"movingAverageConvergenceDivergence() computation failed unexpectedly: %s",
+			e,
+			exc_info=True,
+		)
 		return None
 
 	# ------------------------------------------------------------------
@@ -230,7 +232,7 @@ def macd(
 	# Sanity check: if dropna() wiped everything, something is very wrong
 	if result.empty:
 		logger.warning(
-			"macd() produced an all-NaN result after dropna() — "
+			"movingAverageConvergenceDivergence() produced an all-NaN result after dropna() — "
 			"DataFrame may be too short or price column contains only NaNs."
 		)
 		return None
@@ -244,88 +246,423 @@ def macd(
 	return result
 
 
+# Alias — shorthand, same function as movingAverageConvergenceDivergence()
+macd = movingAverageConvergenceDivergence
+
+
 # ---------------------------------------------------------------------------
 # EMA
 # ---------------------------------------------------------------------------
-def ema(close: pd.Series, window: int) -> pd.Series | None:
-	"""
-	Calculate Exponential Moving Average (EMA).
+def exponentialMovingAverage(
+	df: pd.DataFrame, window: int, col: str = "Close"
+) -> pd.DataFrame | None:
+	"""Calculate Exponential Moving Average and append as a column.
+
+	Matches the df-in/df-out contract used by ``simpleMovingAverage``, ``movingAverageConvergenceDivergence``,
+	and ``bollingerBands`` (ADR-0002) — indicators.py is the sole place
+	indicators are calculated, and every indicator appends to one DataFrame
+	so downstream callers (screener, strategy) work off a single row of
+	merged columns instead of reassembling separate Series.
 
 	Args:
-		close (pd.Series): Series containing closing prices.
-		window (int): EMA lookback period. Must be greater than 0.
+		df (pd.DataFrame): OHLCV DataFrame produced by ``fetch_ohlc`` or
+			``fetch_batch``. Must contain the column named by ``col``.
+		window (int): EMA lookback period. Must be a positive integer.
+		col (str): Price column to compute EMA on. Defaults to ``"Close"``.
 
 	Returns:
-		pd.Series | None: EMA values with NaN rows removed.
-		The returned Series has a shorter index than the input because
-		the first (window - 1) rows are dropped after EMA calculation.
-		Returns None if validation or computation fails.
+		pd.DataFrame | None: Copy of ``df`` with one new column
+		``EMA<window>`` appended. Leading NaN rows (first ``window - 1``)
+		are dropped. Returns ``None`` if validation or computation fails.
 	"""
-
-	# Input validation
-	if close is None:
-		logger.error("ema() received None as input")
-		return None
-
-	if not isinstance(close, pd.Series):
+	if df is None:
 		logger.error(
-			"ema() expected pd.Series, got %s",
-			type(close).__name__,
+			"exponentialMovingAverage() received None as input — pass a DataFrame from fetch_ohlc()"
 		)
 		return None
 
-	if close.empty:
-		logger.warning("ema() received an empty Series")
+	if not isinstance(df, pd.DataFrame):
+		logger.error(
+			"exponentialMovingAverage() expected pd.DataFrame, got %s",
+			type(df).__name__,
+		)
+		return None
+
+	if df.empty:
+		logger.warning(
+			"exponentialMovingAverage() received an empty DataFrame — nothing to compute"
+		)
+		return None
+
+	if col not in df.columns:
+		logger.error(
+			"exponentialMovingAverage() could not find column '%s' in DataFrame. Available columns: %s",
+			col,
+			list(df.columns),
+		)
 		return None
 
 	if not isinstance(window, int) or window <= 0:
 		logger.error(
-			"ema() parameter 'window' must be a positive integer, got %r",
+			"exponentialMovingAverage() parameter 'window' must be a positive integer, got %r",
 			window,
 		)
 		return None
 
 	try:
+		result = df.copy()
+		col_name = f"EMA{window}"
+
 		logger.info(
-			"Computing EMA for %d rows (window=%d)",
-			len(close),
+			"Computing EMA for %d rows (window=%d, col='%s')",
+			len(result),
 			window,
+			col,
 		)
 
-		# Defensive squeeze for callers that may pass df[['Close']]
-		close = pd.Series(close.squeeze())
-
-		ema_series = EMAIndicator(
-			close=close,
+		result[col_name] = EMAIndicator(
+			close=result[col],
 			window=window,
 		).ema_indicator()
 
-		ema_series = ema_series.dropna()
-
-		if ema_series.empty:
-			logger.warning("ema() produced an empty result after dropna()")
-			return None
-
-		logger.info(
-			"EMA computed successfully — %d usable rows",
-			len(ema_series),
-		)
-
-		return ema_series
-
 	except Exception as e:
 		logger.error(
-			"ema() computation failed unexpectedly: %s",
+			"exponentialMovingAverage() computation failed unexpectedly: %s",
 			e,
 			exc_info=True,
 		)
 		return None
 
+	rows_before = len(result)
+	result.dropna(subset=[col_name], inplace=True)
+	rows_dropped = rows_before - len(result)
+
+	if rows_dropped > 0:
+		logger.info(
+			"Dropped %d NaN rows after EMA calculation (%d rows remaining)",
+			rows_dropped,
+			len(result),
+		)
+
+	if result.empty:
+		logger.warning(
+			"exponentialMovingAverage() produced an all-NaN result after dropna() — "
+			"DataFrame may be too short for window=%d.",
+			window,
+		)
+		return None
+
+	logger.info(
+		"EMA computed successfully — %d usable rows, column added: %s",
+		len(result),
+		col_name,
+	)
+	return result
+
+
+# Alias — shorthand, same function as exponentialMovingAverage()
+ema = exponentialMovingAverage
+
+
+# ---------------------------------------------------------------------------
+# RSI
+# ---------------------------------------------------------------------------
+def relativeStrengthIndex(
+	df: pd.DataFrame, window: int = 14, col: str = "Close"
+) -> pd.DataFrame | None:
+	"""Calculate Relative Strength Index and append as a column.
+
+	Uses ``ta.momentum.RSIIndicator`` (Wilder smoothing) so the project has
+	exactly one RSI implementation — ``indicators.py`` is the sole place
+	indicators are calculated (ADR-0002). Screener and strategy code read
+	the ``RSI`` column off the df rather than computing their own.
+
+	Args:
+		df (pd.DataFrame): OHLCV DataFrame produced by ``fetch_ohlc`` or
+			``fetch_batch``. Must contain the column named by ``col``.
+		window (int): RSI lookback period. Standard default is ``14``.
+			Must be a positive integer.
+		col (str): Price column to compute RSI on. Defaults to ``"Close"``.
+
+	Returns:
+		pd.DataFrame | None: Copy of ``df`` with one new column ``RSI``
+		appended. Leading NaN rows (first ``window`` rows) are dropped.
+		Returns ``None`` if validation or computation fails.
+	"""
+	if df is None:
+		logger.error(
+			"relativeStrengthIndex() received None as input — pass a DataFrame from fetch_ohlc()"
+		)
+		return None
+
+	if not isinstance(df, pd.DataFrame):
+		logger.error(
+			"relativeStrengthIndex() expected pd.DataFrame, got %s", type(df).__name__
+		)
+		return None
+
+	if df.empty:
+		logger.warning(
+			"relativeStrengthIndex() received an empty DataFrame — nothing to compute"
+		)
+		return None
+
+	if col not in df.columns:
+		logger.error(
+			"relativeStrengthIndex() could not find column '%s' in DataFrame. Available columns: %s",
+			col,
+			list(df.columns),
+		)
+		return None
+
+	if not isinstance(window, int) or window <= 0:
+		logger.error(
+			"relativeStrengthIndex() parameter 'window' must be a positive integer, got %r",
+			window,
+		)
+		return None
+
+	try:
+		result = df.copy()
+
+		logger.info(
+			"Computing RSI for %d rows (window=%d, col='%s')",
+			len(result),
+			window,
+			col,
+		)
+
+		result["RSI"] = RSIIndicator(close=result[col], window=window).rsi()
+
+	except Exception as e:
+		logger.error(
+			"relativeStrengthIndex() computation failed unexpectedly: %s",
+			e,
+			exc_info=True,
+		)
+		return None
+
+	rows_before = len(result)
+	result.dropna(subset=["RSI"], inplace=True)
+	rows_dropped = rows_before - len(result)
+
+	if rows_dropped > 0:
+		logger.info(
+			"Dropped %d NaN rows after RSI calculation (%d rows remaining)",
+			rows_dropped,
+			len(result),
+		)
+
+	if result.empty:
+		logger.warning(
+			"relativeStrengthIndex() produced an all-NaN result after dropna() — "
+			"DataFrame may be too short for window=%d.",
+			window,
+		)
+		return None
+
+	logger.info(
+		"RSI computed successfully — %d usable rows, column added: RSI", len(result)
+	)
+	return result
+
+
+# Alias — shorthand, same function as relativeStrengthIndex()
+rsi = relativeStrengthIndex
+
+
+# ---------------------------------------------------------------------------
+# ATR
+# ---------------------------------------------------------------------------
+def averageTrueRange(df: pd.DataFrame, window: int = 14) -> pd.DataFrame | None:
+	"""Calculate Average True Range and append as a column.
+
+	Uses ``ta.volatility.AverageTrueRange``, which requires High, Low, and
+	Close columns (unlike the other indicators in this module, which only
+	need a single price column).
+
+	Args:
+		df (pd.DataFrame): OHLCV DataFrame produced by ``fetch_ohlc`` or
+			``fetch_batch``. Must contain ``High``, ``Low``, and ``Close``.
+		window (int): ATR lookback period. Standard default is ``14``.
+			Must be a positive integer.
+
+	Returns:
+		pd.DataFrame | None: Copy of ``df`` with one new column ``ATR``
+		appended. Leading NaN rows (first ``window`` rows) are dropped.
+		Returns ``None`` if validation or computation fails.
+	"""
+	if df is None:
+		logger.error(
+			"averageTrueRange() received None as input — pass a DataFrame from fetch_ohlc()"
+		)
+		return None
+
+	if not isinstance(df, pd.DataFrame):
+		logger.error(
+			"averageTrueRange() expected pd.DataFrame, got %s", type(df).__name__
+		)
+		return None
+
+	if df.empty:
+		logger.warning(
+			"averageTrueRange() received an empty DataFrame — nothing to compute"
+		)
+		return None
+
+	missing = [c for c in ("High", "Low", "Close") if c not in df.columns]
+	if missing:
+		logger.error(
+			"averageTrueRange() missing required column(s) %s. Available columns: %s",
+			missing,
+			list(df.columns),
+		)
+		return None
+
+	if not isinstance(window, int) or window <= 0:
+		logger.error(
+			"averageTrueRange() parameter 'window' must be a positive integer, got %r",
+			window,
+		)
+		return None
+
+	try:
+		result = df.copy()
+
+		logger.info("Computing ATR for %d rows (window=%d)", len(result), window)
+
+		result["ATR"] = AverageTrueRange(
+			high=result["High"],
+			low=result["Low"],
+			close=result["Close"],
+			window=window,
+		).average_true_range()
+
+	except Exception as e:
+		logger.error(
+			"averageTrueRange() computation failed unexpectedly: %s", e, exc_info=True
+		)
+		return None
+
+	rows_before = len(result)
+	result.dropna(subset=["ATR"], inplace=True)
+	rows_dropped = rows_before - len(result)
+
+	if rows_dropped > 0:
+		logger.info(
+			"Dropped %d NaN rows after ATR calculation (%d rows remaining)",
+			rows_dropped,
+			len(result),
+		)
+
+	if result.empty:
+		logger.warning(
+			"averageTrueRange() produced an all-NaN result after dropna() — "
+			"DataFrame may be too short for window=%d.",
+			window,
+		)
+		return None
+
+	logger.info(
+		"ATR computed successfully — %d usable rows, column added: ATR", len(result)
+	)
+	return result
+
+
+# Alias — shorthand, same function as averageTrueRange()
+atr = averageTrueRange
+
+
+# ---------------------------------------------------------------------------
+# VWAP — manual implementation; `ta` library has no daily VWAP (CLAUDE.md §20.3)
+# ---------------------------------------------------------------------------
+def volumeWeightedAveragePrice(df: pd.DataFrame) -> pd.DataFrame | None:
+	"""Calculate cumulative Volume Weighted Average Price and append as a column.
+
+	``ta`` does not provide a daily VWAP, so this is computed manually per
+	CLAUDE.md §20.3: typical price (HLC/3) weighted by volume, cumulative
+	from the start of the DataFrame. Resets only if the caller resamples
+	per-day before calling — this function does not reset per trading day
+	on its own.
+
+	Args:
+		df (pd.DataFrame): OHLCV DataFrame produced by ``fetch_ohlc`` or
+			``fetch_batch``. Must contain ``High``, ``Low``, ``Close``,
+			and ``Volume``.
+
+	Returns:
+		pd.DataFrame | None: Copy of ``df`` with one new column ``VWAP``
+		appended. Returns ``None`` if validation fails.
+	"""
+	if df is None:
+		logger.error(
+			"volumeWeightedAveragePrice() received None as input — pass a DataFrame from fetch_ohlc()"
+		)
+		return None
+
+	if not isinstance(df, pd.DataFrame):
+		logger.error(
+			"volumeWeightedAveragePrice() expected pd.DataFrame, got %s",
+			type(df).__name__,
+		)
+		return None
+
+	if df.empty:
+		logger.warning(
+			"volumeWeightedAveragePrice() received an empty DataFrame — nothing to compute"
+		)
+		return None
+
+	missing = [c for c in ("High", "Low", "Close", "Volume") if c not in df.columns]
+	if missing:
+		logger.error(
+			"volumeWeightedAveragePrice() missing required column(s) %s. Available columns: %s",
+			missing,
+			list(df.columns),
+		)
+		return None
+
+	if (df["Volume"] == 0).all():
+		logger.warning(
+			"volumeWeightedAveragePrice() received all-zero Volume — VWAP would be undefined"
+		)
+		return None
+
+	try:
+		result = df.copy()
+
+		logger.info("Computing VWAP for %d rows", len(result))
+
+		typical_price = (result["High"] + result["Low"] + result["Close"]) / 3
+		result["VWAP"] = (typical_price * result["Volume"]).cumsum() / result[
+			"Volume"
+		].cumsum()
+
+	except Exception as e:
+		logger.error(
+			"volumeWeightedAveragePrice() computation failed unexpectedly: %s",
+			e,
+			exc_info=True,
+		)
+		return None
+
+	if result["VWAP"].isna().all():
+		logger.warning("volumeWeightedAveragePrice() produced an all-NaN result")
+		return None
+
+	logger.info("VWAP computed successfully — %d rows, column added: VWAP", len(result))
+	return result
+
+
+# Alias — shorthand, same function as volumeWeightedAveragePrice()
+vwap = volumeWeightedAveragePrice
+
+
 # SMA Indicator
 # ---------------------------------------------------------------------------
 
 
-def calculate_sma(
+def simpleMovingAverage(
 	df: pd.DataFrame,
 	windows: list[int] | None = None,
 	col: str = "Close",
@@ -367,14 +704,14 @@ def calculate_sma(
 		Standard crossover pair (SMA20 + SMA50)::
 
 			df = fetch_ohlc("RELIANCE.NS", period="1y")
-			df = calculate_sma(df)            # default [20, 50]
+			df = simpleMovingAverage(df)            # default [20, 50]
 			if df is None:
 				...                           # handle failure
 			# df now has columns: Open High Low Close Volume SMA20 SMA50
 
 		Custom windows::
 
-			df = calculate_sma(df, windows=[10, 20, 200])
+			df = simpleMovingAverage(df, windows=[10, 20, 200])
 			# df now has columns: ... SMA10 SMA20 SMA200
 
 		Generate crossover signal after calling this::
@@ -556,11 +893,15 @@ def calculate_sma(
 		return None
 
 	logger.info(
-		"calculate_sma complete — %d rows returned, columns added: %s",
+		"simpleMovingAverage complete — %d rows returned, columns added: %s",
 		len(df),
 		sma_cols,
 	)
 	return df
+
+
+# Alias — shorthand, same function as simpleMovingAverage()
+sma = simpleMovingAverage
 
 
 # ---------------------------------------------------------------------------
@@ -571,7 +912,7 @@ def calculate_sma(
 # Bollinger Bands
 
 
-def add_bollinger_bands(
+def bollingerBands(
 	df: pd.DataFrame,
 	window: int = 20,
 	window_dev: float = 2.0,
@@ -642,22 +983,22 @@ def add_bollinger_bands(
 
 	        df = fetch_ohlc("RELIANCE.NS", period="1y", interval="1d")
 	        if df is not None:
-	            df = add_bollinger_bands(df)
+	            df = bollingerBands(df)
 	            print(df[["Close", "BB_upper", "BB_mid", "BB_lower"]].tail())
 
 	    Custom settings — tighter 10-period bands with 1.5 std-dev::
 
-	        df = add_bollinger_bands(df, window=10, window_dev=1.5)
+	        df = bollingerBands(df, window=10, window_dev=1.5)
 
 	    Squeeze detection — identify consolidation periods::
 
-	        df = add_bollinger_bands(df)
+	        df = bollingerBands(df)
 	        squeeze_rows = df[df["BB_width"] < df["BB_width"].quantile(0.1)]
 	        logger.info("Squeeze periods found: %d rows", len(squeeze_rows))
 
 	    %b based signal (price crossing above midline)::
 
-	        df = add_bollinger_bands(df)
+	        df = bollingerBands(df)
 	        cross_above_mid = (df["BB_pct_b"] > 0.5) & (df["BB_pct_b"].shift(1) <= 0.5)
 	        logger.info("Mid-band upward crossovers: %d", cross_above_mid.sum())
 
@@ -809,214 +1150,77 @@ def add_bollinger_bands(
 	return df
 
 
+# Alias — shorthand, same function as bollingerBands()
+bb = bollingerBands
+
+
+
+
 if __name__ == "__main__":
 	import sys
 
 	logging.basicConfig(
 		level=logging.INFO,
 		format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-		handlers=[
-			logging.StreamHandler(sys.stdout),
-		],
+		handlers=[logging.StreamHandler(sys.stdout)],
 	)
 
-	# Import fetch here (inside __main__) so indicators.py stays import-clean
-	# when used as a library — no circular dependency risk
+	# Real-world example run — fetch a live ticker and print actual computed
+	# values, rather than a synthetic smoke test. Edge cases live in
+	# tests/test_indicators.py (pytest), not here.
 	try:
 		from fetch import fetch_ohlc  # works when run from src/data/
 	except ImportError:
 		from src.data.fetch import fetch_ohlc  # works when run from repo root
 
-	logger.info("--- Smoke test: MACD indicator ---")
+	TICKER = "RELIANCE.NS"
+	logger.info("--- Indicator example run: %s, 1y daily ---", TICKER)
 
-	# ---- Test 1: Normal path ----
-	logger.info("Test 1 — normal path: RELIANCE.NS, 1y daily")
-	df = fetch_ohlc("RELIANCE.NS", period="1y", interval="1d")
-	if df is not None:
-		result = macd(df)
+	df = fetch_ohlc(TICKER, period="1y", interval="1d")
+	if df is None:
+		logger.error("Could not fetch %s — check network connection. Exiting.", TICKER)
+		sys.exit(1)
+
+	for fn in (
+		lambda d: movingAverageConvergenceDivergence(d),
+		lambda d: sma(d, windows=[20, 50]),
+		lambda d: ema(d, window=20),
+		rsi,
+		atr,
+		vwap,
+		bollingerBands,
+	):
+		result = fn(df)
 		if result is not None:
-			logger.info(
-				"PASSED — shape: %s, columns: %s",
-				result.shape,
-				list(result.columns),
-			)
-			logger.info(
-				"Last 3 rows:\n%s",
-				result[["Close", "MACD", "MACD_signal", "MACD_diff"]]
-				.tail(3)
-				.to_string(),
-			)
-		else:
-			logger.error("FAILED — macd() returned None on valid input")
-	else:
-		logger.warning("Skipping Test 1 — fetch returned None (network unavailable?)")
+			df = result
 
-	# ---- Test 2: Empty DataFrame ----
-	logger.info("Test 2 — empty DataFrame input")
-	result_empty = macd(pd.DataFrame())
-	assert result_empty is None, "Expected None for empty DataFrame"
-	logger.info("PASSED — returned None for empty DataFrame")
-
-	# ---- Test 3: Missing Close column ----
-	logger.info("Test 3 — missing 'Close' column")
-	df_no_close = pd.DataFrame({"Open": [100, 101], "High": [102, 103]})
-	result_no_close = macd(df_no_close)
-	assert result_no_close is None, "Expected None when Close column is absent"
-	logger.info("PASSED — returned None for missing Close column")
-
-	# ---- Test 4: window_fast >= window_slow ----
-	logger.info("Test 4 — inverted windows (window_fast >= window_slow)")
-	if df is not None:
-		result_inverted = macd(df, window_fast=26, window_slow=12)
-		assert result_inverted is None, "Expected None for inverted window params"
-		logger.info("PASSED — returned None for inverted window params")
-
-	# ---- Test 5: DataFrame too short ----
-	logger.info("Test 5 — DataFrame shorter than minimum required rows")
-	df_short = pd.DataFrame({"Close": [100.0] * 10})  # only 10 rows, need 34
-	result_short = macd(df_short)
-	assert result_short is None, "Expected None for too-short DataFrame"
-	logger.info("PASSED — returned None for too-short DataFrame")
-
-	# ---- Test 6: None input ----
-	logger.info("Test 6 — None input")
-	result_none = macd(None)  # type: ignore[arg-type]
-	assert result_none is None, "Expected None for None input"
-	logger.info("PASSED — returned None for None input")
-
-	# ---- Test 7: Custom parameters ----
-	logger.info(
-		"Test 7 — custom parameters (window_slow=20, window_fast=8, window_sign=6)"
-	)
-	if df is not None:
-		result_custom = macd(df, window_slow=20, window_fast=8, window_sign=6)
-		if result_custom is not None:
-			logger.info("PASSED — custom params shape: %s", result_custom.shape)
-		else:
-			logger.error("FAILED — macd() returned None on custom valid params")
-
-	# ---- Test 8: SMA smoke test ----
-	logger.info("--- Smoke test: SMA indicator ---")
-	if df is not None:
-		df_sma = calculate_sma(df.copy())
-		if (
-			df_sma is not None
-			and "SMA20" in df_sma.columns
-			and "SMA50" in df_sma.columns
-		):
-			logger.info(
-				"PASSED — calculate_sma() returned %d rows with SMA20, SMA50",
-				len(df_sma),
-			)
-		else:
-			logger.error("FAILED — calculate_sma() returned unexpected result")
-	# ---- Test 9: Bollinger Bands normal path ----
-	logger.info("--- Smoke test: Bollinger Bands indicator ---")
-	logger.info("Test 1 — normal path: RELIANCE.NS, 1y daily")
-	if df is not None:
-		result_bb = add_bollinger_bands(df)
-		if result_bb is not None:
-			logger.info(
-				"PASSED — shape: %s, columns: %s",
-				result_bb.shape,
-				list(result_bb.columns),
-			)
-			logger.info(
-				"Last 3 rows:\n%s",
-				result_bb[["Close", "BB_upper", "BB_mid", "BB_lower"]]
-				.tail(3)
-				.to_string(),
-			)
-		else:
-			logger.error("FAILED — add_bollinger_bands() returned None on valid input")
-	else:
-		logger.warning("Skipping Bollinger Bands Test 1 — fetch returned None")
-
-	# ---- Test 10: Bollinger Bands empty DataFrame ----
-	logger.info("Test 2 — empty DataFrame input")
-	try:
-		result_bb_empty = add_bollinger_bands(pd.DataFrame())
-		if result_bb_empty is None or result_bb_empty.empty:
-			logger.info("PASSED — returned None or empty DataFrame for empty input")
-		else:
-			logger.warning(
-				"Bollinger Bands test returned non-empty result for empty input"
-			)
-	except ValueError as e:
-		logger.info("PASSED — correctly raised ValueError for empty input: %s", e)
-
-	# ---- Test 11: Bollinger Bands missing Close column ----
-	logger.info("Test 3 — missing 'Close' column")
-	df_no_close_bb = pd.DataFrame({"Open": [100, 101], "High": [102, 103]})
-	try:
-		result_bb_no_close = add_bollinger_bands(df_no_close_bb)
-		if result_bb_no_close is None or result_bb_no_close.empty:
-			logger.info(
-				"PASSED — returned None or empty DataFrame for missing Close column"
-			)
-		else:
-			logger.warning(
-				"Bollinger Bands test returned result despite missing Close column"
-			)
-	except (ValueError, KeyError) as e:
-		logger.info(
-			"PASSED — correctly raised exception for missing Close column: %s", e
+	cols = [
+		c
+		for c in (
+			"Close",
+			"SMA20",
+			"SMA50",
+			"EMA20",
+			"RSI",
+			"ATR",
+			"VWAP",
+			"MACD",
+			"MACD_signal",
+			"BB_upper",
+			"BB_mid",
+			"BB_lower",
 		)
+		if c in df.columns
+	]
 
-	# ---- Test 12: Bollinger Bands custom window ----
-	logger.info("Test 4 — custom window (window=10)")
-	if df is not None:
-		result_bb_custom = add_bollinger_bands(df, window=10)
-		if result_bb_custom is not None:
-			logger.info("PASSED — custom window shape: %s", result_bb_custom.shape)
-		else:
-			logger.error(
-				"FAILED — add_bollinger_bands() returned None on custom valid params"
-			)
-
-	logger.info("--- Smoke test complete ---")
-
-	# ---------------------------------------------------------------------------
-	# EMA Smoke Tests
-	# ---------------------------------------------------------------------------
-
-	logger.info("--- Smoke test: EMA indicator ---")
-
-	# ---- Test 1: Normal path ----
-	logger.info("Test 1 — EMA normal path")
-
-	sample_close = pd.Series([100, 101, 102, 103, 104, 105, 106, 107, 108, 109])
-
-	ema_result = ema(sample_close, window=3)
-
-	if ema_result is not None:
-		logger.info("PASSED — EMA rows=%d", len(ema_result))
-	else:
-		logger.error("FAILED — ema() returned None")
-
-	# ---- Test 2: Empty Series ----
-	logger.info("Test 2 — empty Series")
-
-	result_empty = ema(pd.Series(dtype=float), window=3)
-	assert result_empty is None
-
-	logger.info("PASSED — returned None for empty Series")
-
-	# ---- Test 3: Invalid Window ----
-	logger.info("Test 3 — invalid window")
-
-	result_invalid = ema(sample_close, window=0)
-	assert result_invalid is None
-
-	logger.info("PASSED — returned None for invalid window")
-
-	# ---- Test 4: None Input ----
-	logger.info("Test 4 — None input")
-
-	result_none = ema(None, window=3)  # type: ignore[arg-type]
-	assert result_none is None
-
-	logger.info("PASSED — returned None for None input")
-
-	logger.info("--- EMA smoke test complete ---")
-	logger.info("--- All smoke tests complete ---")
+	logger.info("Latest 5 rows for %s:\n%s", TICKER, df[cols].tail(5).to_string())
+	logger.info(
+		"Latest values — Close=%.2f | SMA20=%.2f | SMA50=%.2f | EMA20=%.2f | RSI=%.1f | ATR=%.2f",
+		df["Close"].iloc[-1],
+		df["SMA20"].iloc[-1] if "SMA20" in df.columns else float("nan"),
+		df["SMA50"].iloc[-1] if "SMA50" in df.columns else float("nan"),
+		df["EMA20"].iloc[-1] if "EMA20" in df.columns else float("nan"),
+		df["RSI"].iloc[-1] if "RSI" in df.columns else float("nan"),
+		df["ATR"].iloc[-1] if "ATR" in df.columns else float("nan"),
+	)
+	logger.info("--- Example run complete (%d rows) ---", len(df))
