@@ -15,18 +15,18 @@ logger = logging.getLogger(__name__)
 def fetch_market_summary(ticker: str = "RELIANCE.NS") -> dict[str, float | str]:
 	"""Download one year of market data and compute a readable summary.
 
-	Args:
+	    Args:
 	    ticker: Yahoo Finance ticker symbol to download. Defaults to RELIANCE.NS.
 
-	Returns:
+	    Returns:
 	    A dictionary containing the high, low, average close, SMA20, SMA50,
-	    signal, percentage change, and average volume over the downloaded
-	    period.
+	signal, percentage change, and average volume over the downloaded
+	period.
 
-	Raises:
-	    ValueError: If yfinance returns no data for the requested ticker.
+	    Raises:
+	ValueError: If yfinance returns no data for the requested ticker.
 	    Exception: If the yfinance download call fails unexpectedly.
-	"""
+	"""  # noqa: E101
 	if not ticker.endswith(".NS"):
 		raise ValueError(f"NSE ticker must include the '.NS' suffix: {ticker!r}")
 
