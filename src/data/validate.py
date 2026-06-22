@@ -132,46 +132,74 @@ def _remove_holidays(
 	return df
 
 
-def _detect_gaps(
-	df: pd.DataFrame,
-	ticker: str,
-	report: ValidationReport,
-) -> None:
-	"""Populate report.gaps with expected trading days missing from df.
+def _detect_gaps(df: pd.DataFrame) -> list[str]:
+	"""Find missing trading days in a DataFrame.
 
-	Args:
-		df (pd.DataFrame): OHLCV DataFrame with datetime index.
-		ticker (str): Ticker string — used in log messages only.
-		report (ValidationReport): Report object to update.
+	Compares df.index against expected business days to find genuine gaps.
 	"""
+	if df.empty:
+		return []
+
+	start_date = df.index.min()
+	end_date = df.index.max()
+
+	# Generate the expected business days
+	expected = pd.date_range(start=start_date, end=end_date, freq="B")
+
 	cal = _get_nse_calendar()
-	if cal is None:
-		report.warnings.append(
-			f"{ticker}: gap check skipped — NSE calendar unavailable"
+	if cal is not None:
+		try:
+			schedule = cal.schedule(start_date=start_date, end_date=end_date)
+			expected_trading = [d.strftime("%Y-%m-%d") for d in schedule.index]
+		except Exception:
+			expected_trading = [d.strftime("%Y-%m-%d") for d in expected]
+	else:
+		expected_trading = [d.strftime("%Y-%m-%d") for d in expected]
+
+	actual = set(df.index.strftime("%Y-%m-%d"))
+	missing = [d for d in expected_trading if d not in actual]
+	return missing
+
+
+def _check_bad_ticks(df: pd.DataFrame) -> int:
+	"""Count rows with impossible OHLC values or zero volume.
+
+	Does NOT drop rows - flags only. Caller decides how to handle.
+	"""
+	if df.empty:
+		return 0
+
+	bad_rows = (
+		(df["High"] < df["Low"])
+		| (df["High"] < df["Open"])
+		| (df["High"] < df["Close"])
+		| (df["Low"] > df["Open"])
+		| (df["Low"] > df["Close"])
+		| (df["Volume"] == 0)
+	)
+	return int(bad_rows.sum())
+
+
+def _check_stale(df: pd.DataFrame) -> tuple[bool, int]:
+	"""Check if the data is stale (last row is older than 3 business days)."""
+	if df.empty:
+		return False, 0
+
+	last_date = df.index[-1].normalize()
+	today = pd.Timestamp.today().normalize()
+
+	# Count business days between the last data point and today
+	business_days_since = len(pd.bdate_range(start=last_date, end=today)) - 1
+	is_stale = business_days_since > 3
+
+	if is_stale:
+		logger.warning(
+			"Data stale: last row %s is %d trading days old",
+			last_date.date(),
+			business_days_since,
 		)
-		return
 
-	start = df.index.min()
-	end = df.index.max()
-
-	try:
-		schedule = cal.schedule(
-			start_date=start.strftime("%Y-%m-%d"),
-			end_date=end.strftime("%Y-%m-%d"),
-		)
-		expected = set(d.date() for d in schedule.index)
-	except Exception as e:
-		report.warnings.append(f"{ticker}: gap check failed — {e}")
-		return
-
-	actual = set(d.date() if hasattr(d, "date") else d for d in df.index.normalize())
-	gaps = sorted(expected - actual)
-
-	if gaps:
-		report.gaps = gaps
-		report.warnings.append(
-			f"{ticker}: {len(gaps)} missing trading day(s) — first gap: {gaps[0]}"
-		)
+	return is_stale, business_days_since
 
 
 def _filter_bad_ticks(
@@ -203,11 +231,17 @@ def _filter_bad_ticks(
 		if zero_neg.any():
 			for idx in df.index[zero_neg]:
 				report.bad_ticks.append(
-					{"date": idx.date() if hasattr(idx, "date") else idx,
-					 "reason": f"{col} <= 0 ({df.loc[idx, col]})"}
+					{
+						"date": idx.date() if hasattr(idx, "date") else idx,
+						"reason": f"{col} <= 0 ({df.loc[idx, col]})",
+					}
 				)
 				logger.warning(
-					"%s: bad tick at %s — %s <= 0 (%s)", ticker, idx, col, df.loc[idx, col]
+					"%s: bad tick at %s — %s <= 0 (%s)",
+					ticker,
+					idx,
+					col,
+					df.loc[idx, col],
 				)
 			bad_mask |= zero_neg
 
@@ -216,7 +250,11 @@ def _filter_bad_ticks(
 	if len(df) >= 15 and all(c in df.columns for c in ["High", "Low", "Close"]):
 		try:
 			atr_series = AverageTrueRange(
-				high=df["High"], low=df["Low"], close=df["Close"], window=14, fillna=False
+				high=df["High"],
+				low=df["Low"],
+				close=df["Close"],
+				window=14,
+				fillna=False,
 			).average_true_range()
 
 			spike_threshold = 5 * atr_series
@@ -230,12 +268,18 @@ def _filter_bad_ticks(
 				if spikes.any():
 					for idx in df.index[spikes]:
 						report.bad_ticks.append(
-							{"date": idx.date() if hasattr(idx, "date") else idx,
-							 "reason": f"{col} spike ({df.loc[idx, col]:.2f}) > 5×ATR ({spike_threshold.loc[idx]:.2f})"}
+							{
+								"date": idx.date() if hasattr(idx, "date") else idx,
+								"reason": f"{col} spike ({df.loc[idx, col]:.2f}) > 5×ATR ({spike_threshold.loc[idx]:.2f})",
+							}
 						)
 						logger.warning(
 							"%s: price spike at %s — %s=%.2f exceeds 5×ATR=%.2f",
-							ticker, idx, col, df.loc[idx, col], spike_threshold.loc[idx],
+							ticker,
+							idx,
+							col,
+							df.loc[idx, col],
+							spike_threshold.loc[idx],
 						)
 					bad_mask |= spikes
 		except Exception as e:
@@ -244,16 +288,25 @@ def _filter_bad_ticks(
 	# --- Check 3: volume outlier > 10× rolling mean ---
 	if "Volume" in df.columns:
 		rolling_vol_mean = df["Volume"].rolling(window=20, min_periods=5).mean()
-		outliers = (df["Volume"] > 10 * rolling_vol_mean) & ~bad_mask & rolling_vol_mean.notna()
+		outliers = (
+			(df["Volume"] > 10 * rolling_vol_mean)
+			& ~bad_mask
+			& rolling_vol_mean.notna()
+		)
 		if outliers.any():
 			for idx in df.index[outliers]:
 				report.bad_ticks.append(
-					{"date": idx.date() if hasattr(idx, "date") else idx,
-					 "reason": f"Volume outlier ({df.loc[idx, 'Volume']:.0f}) > 10× rolling mean ({rolling_vol_mean.loc[idx]:.0f})"}
+					{
+						"date": idx.date() if hasattr(idx, "date") else idx,
+						"reason": f"Volume outlier ({df.loc[idx, 'Volume']:.0f}) > 10× rolling mean ({rolling_vol_mean.loc[idx]:.0f})",
+					}
 				)
 				logger.warning(
 					"%s: volume outlier at %s — %.0f > 10× rolling mean %.0f",
-					ticker, idx, df.loc[idx, "Volume"], rolling_vol_mean.loc[idx],
+					ticker,
+					idx,
+					df.loc[idx, "Volume"],
+					rolling_vol_mean.loc[idx],
 				)
 			bad_mask |= outliers
 
@@ -276,39 +329,21 @@ def validate(
 	"""Validate an OHLCV DataFrame and return a cleaned copy with a report.
 
 	Runs the requested checks in order: holidays → bad_ticks → gaps.
-	Holidays are removed before gap detection so NSE non-trading days don't
-	register as data gaps.
 
 	Args:
-		df (pd.DataFrame): OHLCV DataFrame from fetch_ohlc() or fetch_batch().
-			Must have a datetime index and columns: Open, High, Low, Close, Volume.
-		ticker (str): NSE ticker with .NS suffix (e.g. "RELIANCE.NS").
-			Used for calendar lookups and log messages.
-		checks (set[str] | None): Which checks to run. Valid values:
-			``"gaps"``, ``"holidays"``, ``"bad_ticks"``.
-			Defaults to all three: ``{"gaps", "holidays", "bad_ticks"}``.
+	    df (pd.DataFrame): OHLCV DataFrame from fetch_ohlc() or fetch_batch().
+	        Must have a datetime index and columns: Open, High, Low, Close, Volume.
+	    ticker (str): NSE ticker with .NS suffix (e.g. "RELIANCE.NS").
+	        Used for calendar lookups and log messages.
+	    checks (set[str] | None): Which checks to run. Valid values:
+	        ``"gaps"``, ``"holidays"``, ``"bad_ticks"``, ``"stale_data"``.
+	        Defaults to all checks: ``{"gaps", "holidays", "bad_ticks", "stale_data"}``.
 
 	Returns:
-		tuple[pd.DataFrame, ValidationReport]: Cleaned DataFrame and report.
-			The DataFrame is a copy — original is never mutated.
-			Report summarises gaps found, bad ticks removed, holidays removed,
-			and any warnings generated during validation.
-
-	Example:
-		::
-
-			df, report = validate(df, "RELIANCE.NS")
-			if report.gaps:
-				logger.warning("Missing trading days: %s", report.gaps[:5])
-			if report.bad_ticks:
-				logger.warning("Bad ticks removed: %d", len(report.bad_ticks))
-
-		Run only specific checks::
-
-			df, report = validate(df, "RELIANCE.NS", checks={"bad_ticks"})
+	    tuple[pd.DataFrame, ValidationReport]: Cleaned DataFrame and report.
 	"""
 	if checks is None:
-		checks = {"gaps", "holidays", "bad_ticks"}
+		checks = {"gaps", "holidays", "bad_ticks", "stale_data"}
 
 	report = ValidationReport()
 
@@ -319,15 +354,37 @@ def validate(
 	# Work on a copy — never mutate caller's DataFrame
 	result = df.copy()
 
-	# Order matters: remove holidays before gap detection
+	# --- 1. Run your unique counting & timing metrics (AR Tasks #228, #229) ---
+	bad_tick_sanity_count = _check_bad_ticks(result)
+	if bad_tick_sanity_count > 0:
+		report.warnings.append(
+			f"{ticker}: Found {bad_tick_sanity_count} rows with structural OHLC/Volume violations"
+		)
+
+	if "stale_data" in checks:
+		is_stale, business_days_since = _check_stale(result)
+		# Note: _check_stale automatically logs an error if the data is stale
+
+	# --- 2. Run your original dropping & filtering pipeline (RS Architecture) ---
 	if "holidays" in checks:
 		result = _remove_holidays(result, ticker, report)
 
 	if "bad_ticks" in checks:
 		result = _filter_bad_ticks(result, ticker, report)
 
+	# --- 3. Run your updated string gap detector (AR Task #227) ---
 	if "gaps" in checks:
-		_detect_gaps(result, ticker, report)
+		detected_iso_gaps = _detect_gaps(result)
+		if detected_iso_gaps:
+			# Sync text strings back to historical date format for the report object
+			from datetime import datetime
+
+			report.gaps = [
+				datetime.strptime(g, "%Y-%m-%d").date() for g in detected_iso_gaps
+			]
+			report.warnings.append(
+				f"{ticker}: {len(detected_iso_gaps)} missing trading day(s) — first gap: {detected_iso_gaps[0]}"
+			)
 
 	logger.info(
 		"%s: validation complete — %d rows remaining, %d gap(s), %d bad tick(s), %d holiday row(s) removed",
@@ -359,7 +416,9 @@ if __name__ == "__main__":
 	TICKER = "RELIANCE.NS"
 	logger.info("Fetching 6 months of daily data for %s...", TICKER)
 
-	raw = yf.download(TICKER, period="6mo", interval="1d", auto_adjust=True, progress=False)
+	raw = yf.download(
+		TICKER, period="6mo", interval="1d", auto_adjust=True, progress=False
+	)
 	if raw is None or raw.empty:
 		logger.error("No data returned for %s — check ticker or network", TICKER)
 		sys.exit(1)
@@ -369,14 +428,20 @@ if __name__ == "__main__":
 
 	df = raw[["Open", "High", "Low", "Close", "Volume"]].copy()
 	df.dropna(inplace=True)
-	logger.info("Fetched %d rows (%s → %s)", len(df), df.index[0].date(), df.index[-1].date())
+	logger.info(
+		"Fetched %d rows (%s → %s)", len(df), df.index[0].date(), df.index[-1].date()
+	)
 
 	# ---- Full validation ----
 	logger.info("Running full validation (gaps + holidays + bad_ticks)...")
 	clean, report = validate(df, TICKER)
 	logger.info(
 		"Result — rows in: %d | rows out: %d | gaps: %d | bad_ticks: %d | holidays_removed: %d",
-		len(df), len(clean), len(report.gaps), len(report.bad_ticks), report.holidays_removed,
+		len(df),
+		len(clean),
+		len(report.gaps),
+		len(report.bad_ticks),
+		report.holidays_removed,
 	)
 	for w in report.warnings:
 		logger.warning("  %s", w)
