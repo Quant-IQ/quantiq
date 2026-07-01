@@ -11,6 +11,7 @@ import logging
 
 import pandas as pd
 import plotly.graph_objects as go
+from ta.momentum import RSIIndicator
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,84 @@ def macd_chart(df: pd.DataFrame) -> go.Figure | None:
 		title="MACD Oscillator Subplot Dashboard",
 		xaxis_title="Date",
 		yaxis_title="Value",
+		template="plotly_dark",
+		hovermode="x unified",
+	)
+
+	return fig
+
+
+def rsi_chart(df: pd.DataFrame) -> go.Figure | None:
+	"""Generates an interactive Plotly RSI chart.
+
+	Args:
+	    df (pd.DataFrame): DataFrame containing a pre-calculated ``RSI`` column.
+
+	Returns:
+	    go.Figure | None: Plotly figure displaying the RSI indicator,
+	        or None if validation fails.
+	"""
+	if df is None:
+		logger.error(
+			"rsi_chart() received None — pass a DataFrame from indicators.rsi()"
+		)
+		return None
+
+	if df.empty:
+		logger.error("rsi_chart() received an empty DataFrame")
+		return None
+
+	if "RSI" not in df.columns:
+		logger.error(
+			"rsi_chart() missing required column 'RSI' — run indicators.rsi() first"
+		)
+		return None
+
+	if not isinstance(df.index, pd.DatetimeIndex):
+		try:
+			df = df.copy()
+			df.index = pd.to_datetime(df.index)
+		except Exception as e:
+			logger.error(
+				"Failed to convert DataFrame index to DatetimeIndex: %s",
+				e,
+			)
+			return None
+
+	fig = go.Figure()
+
+	fig.add_trace(
+		go.Scatter(
+			x=df.index,
+			y=df["RSI"],
+			mode="lines",
+			name="RSI",
+			line=dict(color="#9C27B0", width=2),
+		)
+	)
+
+	fig.add_hline(
+		y=70,
+		line_dash="dash",
+		line_color="#EF5350",
+		annotation_text="Overbought (70)",
+	)
+
+	fig.add_hline(
+		y=30,
+		line_dash="dash",
+		line_color="#26C26A",
+		annotation_text="Oversold (30)",
+	)
+
+	fig.update_layout(
+		title="Relative Strength Index (RSI 14)",
+		xaxis_title="Date",
+		yaxis_title="RSI",
+		yaxis=dict(
+			range=[0, 100],
+			rangemode="tozero",
+		),
 		template="plotly_dark",
 		hovermode="x unified",
 	)
@@ -493,6 +572,9 @@ if __name__ == "__main__":
 	df["MACD_signal"] = macd_line.ewm(span=9, adjust=False).mean()
 	df["MACD_diff"] = df["MACD"] - df["MACD_signal"]
 
+	# RSI column (normally from indicators.rsi())
+	df["RSI"] = RSIIndicator(close=close_s, window=14).rsi()
+
 	logger.info(
 		"Data ready: %d rows (%s → %s)",
 		len(df),
@@ -511,6 +593,12 @@ if __name__ == "__main__":
 	if fig_macd:
 		fig_macd.update_layout(title=f"{TICKER} — MACD")
 		fig_macd.show()
+
+	logger.info("Rendering RSI chart...")
+	fig_rsi = rsi_chart(df)
+	if fig_rsi:
+		fig_rsi.update_layout(title=f"{TICKER} — RSI (14)")
+		fig_rsi.show()
 
 	logger.info("Rendering volume chart...")
 	fig_vol = volume_chart(df)
