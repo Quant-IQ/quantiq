@@ -11,11 +11,12 @@ import logging
 
 import pandas as pd
 import plotly.graph_objects as go
+from ta.momentum import RSIIndicator
 
 logger = logging.getLogger(__name__)
 
 
-def macd_chart(df: pd.DataFrame) -> go.Figure:
+def macd_chart(df: pd.DataFrame) -> go.Figure | None:
 	"""Generates an interactive Plotly chart containing MACD line, signal line, and histogram.
 
 	Args:
@@ -23,31 +24,33 @@ def macd_chart(df: pd.DataFrame) -> go.Figure:
 	        'MACD', 'MACD_signal', and 'MACD_diff'.
 
 	Returns:
-	    go.Figure: A Plotly chart object populated with the indicator subplot traces.
-
-	Raises:
-	    KeyError: If any of the required MACD metric vector streams are missing.
+	    go.Figure | None: A Plotly chart object populated with the indicator subplot traces,
+	        or None if input is invalid or required columns are missing.
 	"""
-	# 1. Validation check for required data columns
+	if df is None:
+		logger.error(
+			"macd_chart() received None — pass a DataFrame from indicators.macd()"
+		)
+		return None
+
 	required_columns = ["MACD", "MACD_signal", "MACD_diff"]
 	for col in required_columns:
 		if col not in df.columns:
 			logger.error(
-				"Missing required metric column for chart compilation: %s", col
+				"macd_chart() missing required column '%s' — run indicators.macd() first",
+				col,
 			)
-			raise KeyError(f"DataFrame must contain a pre-calculated '{col}' column.")
+			return None
 
-	# 2. Instantiate the figure frame container
 	fig = go.Figure()
 
-	# 3. Add trend-following vector tracking line traces
 	fig.add_trace(
 		go.Scatter(
 			x=df.index,
 			y=df["MACD"],
 			mode="lines",
 			name="MACD",
-			line=dict(color="blue", width=1.5),
+			line=dict(color="#2196F3", width=1.5),
 		)
 	)
 
@@ -57,20 +60,16 @@ def macd_chart(df: pd.DataFrame) -> go.Figure:
 			y=df["MACD_signal"],
 			mode="lines",
 			name="Signal",
-			line=dict(color="orange", width=1.5),
+			line=dict(color="#FF9800", width=1.5),
 		)
 	)
 
-	# 4. Fix Acceptance Criteria #2: Map colors safely to handle positive/negative bars
-	# This avoids the list comprehension object iteration bug present in the issue draft
-	colors = ["green" if val >= 0 else "red" for val in df["MACD_diff"]]
+	colors = ["#26C26A" if val >= 0 else "#EF5350" for val in df["MACD_diff"]]
 
-	# 5. Add the momentum histogram bar trace layout
 	fig.add_trace(
 		go.Bar(x=df.index, y=df["MACD_diff"], name="Histogram", marker_color=colors)
 	)
 
-	# 6. Clean up layout canvas metadata with a clean dark theme
 	fig.update_layout(
 		title="MACD Oscillator Subplot Dashboard",
 		xaxis_title="Date",
@@ -82,47 +81,122 @@ def macd_chart(df: pd.DataFrame) -> go.Figure:
 	return fig
 
 
-def volume_chart(df: pd.DataFrame) -> go.Figure:
+def rsi_chart(df: pd.DataFrame) -> go.Figure | None:
+	"""Generates an interactive Plotly RSI chart.
+
+	Args:
+	    df (pd.DataFrame): DataFrame containing a pre-calculated ``RSI`` column.
+
+	Returns:
+	    go.Figure | None: Plotly figure displaying the RSI indicator,
+	        or None if validation fails.
+	"""
+	if df is None:
+		logger.error(
+			"rsi_chart() received None — pass a DataFrame from indicators.rsi()"
+		)
+		return None
+
+	if df.empty:
+		logger.error("rsi_chart() received an empty DataFrame")
+		return None
+
+	if "RSI" not in df.columns:
+		logger.error(
+			"rsi_chart() missing required column 'RSI' — run indicators.rsi() first"
+		)
+		return None
+
+	if not isinstance(df.index, pd.DatetimeIndex):
+		try:
+			df = df.copy()
+			df.index = pd.to_datetime(df.index)
+		except Exception as e:
+			logger.error(
+				"Failed to convert DataFrame index to DatetimeIndex: %s",
+				e,
+			)
+			return None
+
+	fig = go.Figure()
+
+	fig.add_trace(
+		go.Scatter(
+			x=df.index,
+			y=df["RSI"],
+			mode="lines",
+			name="RSI",
+			line=dict(color="#9C27B0", width=2),
+		)
+	)
+
+	fig.add_hline(
+		y=70,
+		line_dash="dash",
+		line_color="#EF5350",
+		annotation_text="Overbought (70)",
+	)
+
+	fig.add_hline(
+		y=30,
+		line_dash="dash",
+		line_color="#26C26A",
+		annotation_text="Oversold (30)",
+	)
+
+	fig.update_layout(
+		title="Relative Strength Index (RSI 14)",
+		xaxis_title="Date",
+		yaxis_title="RSI",
+		yaxis=dict(
+			range=[0, 100],
+			rangemode="tozero",
+		),
+		template="plotly_dark",
+		hovermode="x unified",
+	)
+
+	return fig
+
+
+def volume_chart(df: pd.DataFrame) -> go.Figure | None:
 	"""Generates an interactive Plotly chart showing volume bars with a 20-day rolling average overlay.
 
 	Args:
 	    df (pd.DataFrame): Dataframe containing at minimum a 'Volume' column with historical data.
 
 	Returns:
-	    go.Figure: A Plotly chart object populated with the volume bar and line overlay traces.
-
-	Raises:
-	    KeyError: If the required 'Volume' column is missing from the input DataFrame.
+	    go.Figure | None: A Plotly chart object populated with the volume bar and line overlay traces,
+	        or None if input is invalid or the 'Volume' column is missing.
 	"""
-	# 1. Defensive programming validation
+	if df is None:
+		logger.error(
+			"volume_chart() received None — pass a DataFrame from fetch_ohlc()"
+		)
+		return None
+
 	if "Volume" not in df.columns:
-		logger.error("Missing required 'Volume' column for chart compilation.")
-		raise KeyError("DataFrame must contain a 'Volume' column.")
+		logger.error("volume_chart() missing required 'Volume' column")
+		return None
 
-	# 2. Calculate the 20-day rolling average volume safely
-	# min_periods=1 ensures that we still get an average even if the dataset has fewer than 20 rows
-	avg_vol = df["Volume"].rolling(window=20, min_periods=1).mean()
+	avg_vol = df["Volume"].rolling(window=20).mean()
 
-	# 3. Instantiate the figure frame container
 	fig = go.Figure()
 
-	# 4. Add the base volume bars trace (Acceptance Criteria #1)
 	fig.add_trace(
-		go.Bar(x=df.index, y=df["Volume"], name="Volume", marker_color="lightblue")
+		go.Bar(x=df.index, y=df["Volume"], name="Volume", marker_color="#42A5F5")
 	)
 
-	# 5. Add the 20-day rolling average overlay line trace (Acceptance Criteria #2)
 	fig.add_trace(
 		go.Scatter(
 			x=avg_vol.index,
 			y=avg_vol,
 			mode="lines",
 			name="20-day Avg Volume",
-			line=dict(color="navy", width=2),
+			line=dict(color="#FFD54F", width=2),
 		)
 	)
 
-	# 6. Clean up layout canvas metadata with a dark theme consistent with the app
 	fig.update_layout(
 		title="Historical Trading Volume & 20-day Moving Average",
 		xaxis_title="Date",
@@ -134,151 +208,414 @@ def volume_chart(df: pd.DataFrame) -> go.Figure:
 	return fig
 
 
-if __name__ == "__main__":
-	# Internal Smoke Test / Sanity Check to confirm execution integrity
-	logging.basicConfig(level=logging.INFO)
-	logger.info("Running custom visualization engine internal smoke test pipelines...")
+def candlestick_chart(
+	df: pd.DataFrame,
+	ema_windows: list[int] | None = None,
+) -> go.Figure | None:
+	"""Generates an interactive Plotly candlestick chart with optional EMA overlays.
 
-	# Instantiating clean mock tracking datasets (25 days to satisfy the 20-day rolling window)
-	mock_index = pd.date_range(start="2026-05-01", periods=25, freq="D")
+	EMA columns must be pre-calculated and present in df before calling this function.
+	Expected column names follow the pattern ``EMA{window}`` (e.g. ``EMA20``, ``EMA50``).
 
-	# Generating a mock matrix sequence
-	mock_df = pd.DataFrame(
-		{
-			"MACD": [1.0 + (i * 0.02) for i in range(25)],
-			"MACD_signal": [1.1 + (i * 0.01) for i in range(25)],
-			"MACD_diff": [((1.0 + (i * 0.02)) - (1.1 + (i * 0.01))) for i in range(25)],
-			"Volume": [
-				1000 + (i * 150) if i % 2 == 0 else 1200 - (i * 50) for i in range(25)
-			],
-		},
-		index=mock_index,
+	Args:
+	    df (pd.DataFrame): DataFrame containing OHLCV columns (Open, High, Low, Close)
+	        and pre-calculated EMA columns matching each requested window.
+	    ema_windows (list[int] | None): EMA periods to overlay (e.g. [20, 50]).
+	        Each window requires a corresponding ``EMA{window}`` column in df.
+	        Defaults to ``[20, 50]``.
+
+	Returns:
+	    go.Figure | None: Plotly figure with candlestick body and EMA line overlays,
+	        or None if df is None, required OHLC columns are missing, or any requested
+	        EMA column is absent.
+	"""
+	if ema_windows is None:
+		ema_windows = [20, 50]
+
+	if df is None:
+		logger.error(
+			"candlestick_chart() received None — pass a DataFrame with OHLCV columns"
+		)
+		return None
+
+	required_ohlc = ["Open", "High", "Low", "Close"]
+	for col in required_ohlc:
+		if col not in df.columns:
+			logger.error("candlestick_chart() missing required column '%s'", col)
+			return None
+
+	ema_colors = ["#FFD700", "#00E5FF", "#FF9800", "#E040FB", "#69FF47"]
+	for window in ema_windows:
+		col = f"EMA{window}"
+		if col not in df.columns:
+			logger.error(
+				"candlestick_chart() missing EMA column '%s' — "
+				"run indicators.ema() with window=%d first",
+				col,
+				window,
+			)
+			return None
+
+	fig = go.Figure()
+
+	fig.add_trace(
+		go.Candlestick(
+			x=df.index,
+			open=df["Open"],
+			high=df["High"],
+			low=df["Low"],
+			close=df["Close"],
+			name="OHLC",
+			increasing_line_color="#26C26A",
+			decreasing_line_color="#EF5350",
+		)
 	)
 
-	# Execute and verify the MACD chart pipeline
-	macd_fig = macd_chart(mock_df)
-	logger.info("MACD chart validation successful: %s", type(macd_fig))
+	for i, window in enumerate(ema_windows):
+		col = f"EMA{window}"
+		fig.add_trace(
+			go.Scatter(
+				x=df.index,
+				y=df[col],
+				mode="lines",
+				name=f"EMA{window}",
+				line=dict(color=ema_colors[i % len(ema_colors)], width=1.5),
+			)
+		)
 
-	# Execute and verify the Volume chart pipeline
-	vol_fig = volume_chart(mock_df)
-	logger.info("Volume chart validation successful: %s", type(vol_fig))
-	logger.info("All visualization module smoke tests completed successfully!")
+	fig.update_layout(
+		title="Candlestick Chart with EMA Overlays",
+		xaxis_title="Date",
+		yaxis_title="Price (₹)",
+		template="plotly_dark",
+		hovermode="x unified",
+		xaxis_rangeslider_visible=False,
+	)
+
+	return fig
+
+
+def bollinger_chart(df: pd.DataFrame) -> go.Figure | None:
+	"""Generates an interactive Plotly chart showing Bollinger Bands with close price.
+
+	Bollinger Bands consist of a middle SMA line and upper/lower bands at ±2 standard
+	deviations. The band area between upper and lower is rendered as a filled region.
+	All BB columns must be pre-calculated before calling this function (e.g. via
+	``ta.volatility.BollingerBands``). Expected column names: ``BB_upper``,
+	``BB_mid``, ``BB_lower``, ``Close``.
+
+	Args:
+	    df (pd.DataFrame): DataFrame containing pre-calculated Bollinger Band columns:
+	        ``BB_upper``, ``BB_mid``, ``BB_lower``, and ``Close``.
+
+	Returns:
+	    go.Figure | None: Plotly figure with close price line, SMA mid-band, and
+	        filled upper/lower band area, or None if df is None or any required
+	        column is missing.
+	"""
+	if df is None:
+		logger.error(
+			"bollinger_chart() received None — pass a DataFrame with BB columns"
+		)
+		return None
+
+	required_columns = ["BB_upper", "BB_mid", "BB_lower", "Close"]
+	for col in required_columns:
+		if col not in df.columns:
+			logger.error(
+				"bollinger_chart() missing required column '%s' — "
+				"run ta.volatility.BollingerBands first",
+				col,
+			)
+			return None
+
+	fig = go.Figure()
+
+	# Upper band — rendered first; lower band fills down to this trace
+	fig.add_trace(
+		go.Scatter(
+			x=df.index,
+			y=df["BB_upper"],
+			mode="lines",
+			name="Upper Band",
+			line=dict(color="#546E7A", width=1),
+			showlegend=True,
+		)
+	)
+
+	# Lower band — fill="tonexty" shades the region between lower and upper
+	fig.add_trace(
+		go.Scatter(
+			x=df.index,
+			y=df["BB_lower"],
+			mode="lines",
+			name="Lower Band",
+			line=dict(color="#546E7A", width=1),
+			fill="tonexty",
+			fillcolor="rgba(84, 110, 122, 0.15)",
+			showlegend=True,
+		)
+	)
+
+	# Middle band (SMA20)
+	fig.add_trace(
+		go.Scatter(
+			x=df.index,
+			y=df["BB_mid"],
+			mode="lines",
+			name="SMA20 (Mid)",
+			line=dict(color="#FFD54F", width=1.5, dash="dot"),
+		)
+	)
+
+	# Close price on top
+	fig.add_trace(
+		go.Scatter(
+			x=df.index,
+			y=df["Close"],
+			mode="lines",
+			name="Close",
+			line=dict(color="#00E5FF", width=1.5),
+		)
+	)
+
+	fig.update_layout(
+		title="Bollinger Bands (20, 2σ)",
+		xaxis_title="Date",
+		yaxis_title="Price (₹)",
+		template="plotly_dark",
+		hovermode="x unified",
+	)
+
+	return fig
+
 
 def plot_ohlc(df: pd.DataFrame) -> go.Figure | None:
-    """
-    Build an interactive Plotly candlestick chart with toggleable technical indicators.
+	"""
+	Build an interactive Plotly candlestick chart with toggleable technical indicators.
 
-    Expects a pandas DataFrame indexed by Datetime with specific baseline metrics
-    already calculated by the technical indicator pipeline.
+	Expects a pandas DataFrame indexed by Datetime with specific baseline metrics
+	already calculated by the technical indicator pipeline.
 
-    Args:
-        df (pd.DataFrame): Financial time series containing 'Open', 'High',
-                           'Low', 'Close' and indicator columns.
+	Args:
+	    df (pd.DataFrame): Financial time series containing 'Open', 'High',
+	                       'Low', 'Close' and indicator columns.
 
-    Returns:
-        go.Figure | None: A fully configured Plotly figure object, or None
-                          if critical price columns are missing or empty.
-    """
-    try:
-        # Check for critical price columns before attempting to map visual traces
-        required_cols = ["Open", "High", "Low", "Close"]
-        if not all(col in df.columns for col in required_cols):
-            logger.error("Data integrity failure: Missing core OHLC columns in DataFrame.")
-            return None
+	Returns:
+	    go.Figure | None: A fully configured Plotly figure object, or None
+	                      if critical price columns are missing or empty.
+	"""
+	try:
+		# Check for critical price columns before attempting to map visual traces
+		required_cols = ["Open", "High", "Low", "Close"]
+		if not all(col in df.columns for col in required_cols):
+			logger.error(
+				"Data integrity failure: Missing core OHLC columns in DataFrame."
+			)
+			return None
 
-        if df.empty:
-            logger.warning("Empty DataFrame passed to plot_ohlc pipeline.")
-            return None
+		if df.empty:
+			logger.warning("Empty DataFrame passed to plot_ohlc pipeline.")
+			return None
 
-        # Synchronize datetime indexing
-        if not isinstance(df.index, pd.DatetimeIndex):
-            df.index = pd.to_datetime(df.index)
+		# Synchronize datetime indexing
+		if not isinstance(df.index, pd.DatetimeIndex):
+			df.index = pd.to_datetime(df.index)
 
-        fig = go.Figure()
+		fig = go.Figure()
 
-        # 1. Base Candlestick Layer (Always Visible index tracking: 0)
-        fig.add_trace(
-            go.Candlestick(
-                x=df.index,
-                open=df["Open"],
-                high=df["High"],
-                low=df["Low"],
-                close=df["Close"],
-                name="OHLC Price"
-            )
-        )
+		# 1. Base Candlestick Layer (Always Visible index tracking: 0)
+		fig.add_trace(
+			go.Candlestick(
+				x=df.index,
+				open=df["Open"],
+				high=df["High"],
+				low=df["Low"],
+				close=df["Close"],
+				name="OHLC Price",
+			)
+		)
 
-        # Technical Indicator Overlays — Checks column mapping safely
-        if "SMA" in df.columns:
-            fig.add_trace(
-                go.Scatter(
-                    x=df.index, y=df["SMA"],
-                    mode="lines", line=dict(color="orange", width=1.5),
-                    name="SMA", visible=True
-                )
-            )
+		# Technical Indicator Overlays — Checks column mapping safely
+		if "SMA" in df.columns:
+			fig.add_trace(
+				go.Scatter(
+					x=df.index,
+					y=df["SMA"],
+					mode="lines",
+					line=dict(color="orange", width=1.5),
+					name="SMA",
+					visible=True,
+				)
+			)
 
-        if "EMA" in df.columns:
-            fig.add_trace(
-                go.Scatter(
-                    x=df.index, y=df["EMA"],
-                    mode="lines", line=dict(color="#1f77b4", width=1.5),
-                    name="EMA", visible=True
-                )
-            )
+		if "EMA" in df.columns:
+			fig.add_trace(
+				go.Scatter(
+					x=df.index,
+					y=df["EMA"],
+					mode="lines",
+					line=dict(color="#1f77b4", width=1.5),
+					name="EMA",
+					visible=True,
+				)
+			)
 
-        if "BB_Upper" in df.columns and "BB_Lower" in df.columns:
-            fig.add_trace(
-                go.Scatter(
-                    x=df.index, y=df["BB_Upper"],
-                    mode="lines", line=dict(color="rgba(231, 76, 60, 0.5)", width=1, dash="dash"),
-                    name="BB Upper", visible=True
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=df.index, y=df["BB_Lower"],
-                    mode="lines", line=dict(color="rgba(231, 76, 60, 0.5)", width=1, dash="dash"),
-                    name="BB Lower", visible=True
-                )
-            )
+		if "BB_Upper" in df.columns and "BB_Lower" in df.columns:
+			fig.add_trace(
+				go.Scatter(
+					x=df.index,
+					y=df["BB_Upper"],
+					mode="lines",
+					line=dict(color="rgba(231, 76, 60, 0.5)", width=1, dash="dash"),
+					name="BB Upper",
+					visible=True,
+				)
+			)
+			fig.add_trace(
+				go.Scatter(
+					x=df.index,
+					y=df["BB_Lower"],
+					mode="lines",
+					line=dict(color="rgba(231, 76, 60, 0.5)", width=1, dash="dash"),
+					name="BB Lower",
+					visible=True,
+				)
+			)
 
-        # 2. Layout Layout & Button Toggle Settings (Plotly Dark Theme Match)
-        total_traces = len(fig.data)
+		# 2. Layout & Button Toggle Settings (Plotly Dark Theme Match)
+		total_traces = len(fig.data)
 
-        fig.update_layout(
-            title="QuantIQ | Dynamic Price Action & Technical Overlays",
-            yaxis_title="Stock Price (INR)",
-            xaxis_title="Timeline / Date",
-            xaxis_rangeslider_visible=True,
-            template="plotly_dark",
-            height=700,
-            width=1000,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            updatemenus=[
-                dict(
-                    type="buttons",
-                    direction="right",
-                    active=0,
-                    x=0.01,
-                    y=1.12,
-                    buttons=list([
-                        dict(
-                            label="Show All Overlays",
-                            method="update",
-                            args=[{"visible": [True] * total_traces}]
-                        ),
-                        dict(
-                            label="Price Action Only",
-                            method="update",
-                            args=[{"visible": [True] + [False] * (total_traces - 1)}]
-                        )
-                    ]),
-                )
-            ]
-        )
-        return fig
+		fig.update_layout(
+			title="QuantIQ | Dynamic Price Action & Technical Overlays",
+			yaxis_title="Stock Price (INR)",
+			xaxis_title="Timeline / Date",
+			xaxis_rangeslider_visible=True,
+			template="plotly_dark",
+			height=700,
+			width=1000,
+			legend=dict(
+				orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+			),
+			updatemenus=[
+				dict(
+					type="buttons",
+					direction="right",
+					active=0,
+					x=0.01,
+					y=1.12,
+					buttons=list(
+						[
+							dict(
+								label="Show All Overlays",
+								method="update",
+								args=[{"visible": [True] * total_traces}],
+							),
+							dict(
+								label="Price Action Only",
+								method="update",
+								args=[
+									{"visible": [True] + [False] * (total_traces - 1)}
+								],
+							),
+						]
+					),
+				)
+			],
+		)
+		return fig
 
-    except Exception as e:
-        logger.error("Visualisation crash caught inside plot_ohlc module: %s", e)
-        return None
+	except Exception as e:
+		logger.error("Visualisation crash caught inside plot_ohlc module: %s", e)
+		return None
+
+
+if __name__ == "__main__":
+	import sys
+
+	import yfinance as yf
+
+	logging.basicConfig(
+		level=logging.INFO,
+		format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+		handlers=[logging.StreamHandler(sys.stdout)],
+	)
+
+	TICKER = "RELIANCE.NS"
+	logger.info("Fetching 6 months of daily data for %s...", TICKER)
+
+	raw = yf.download(
+		TICKER, period="6mo", interval="1d", auto_adjust=True, progress=False
+	)
+	if raw is None or raw.empty:
+		logger.error("No data returned for %s — check ticker or network", TICKER)
+		sys.exit(1)
+
+	# Flatten MultiIndex columns if present (yfinance batch download)
+	if isinstance(raw.columns, pd.MultiIndex):
+		raw.columns = raw.columns.get_level_values(0)
+
+	df = raw[["Open", "High", "Low", "Close", "Volume"]].copy()
+	df.dropna(inplace=True)
+
+	close_s = df["Close"]
+
+	# EMA columns (normally from indicators.ema())
+	df["EMA20"] = close_s.ewm(span=20, adjust=False).mean()
+	df["EMA50"] = close_s.ewm(span=50, adjust=False).mean()
+
+	# MACD columns (normally from indicators.macd())
+	fast_ema = close_s.ewm(span=12, adjust=False).mean()
+	slow_ema = close_s.ewm(span=26, adjust=False).mean()
+	macd_line = fast_ema - slow_ema
+	df["MACD"] = macd_line
+	df["MACD_signal"] = macd_line.ewm(span=9, adjust=False).mean()
+	df["MACD_diff"] = df["MACD"] - df["MACD_signal"]
+
+	# RSI column (normally from indicators.rsi())
+	df["RSI"] = RSIIndicator(close=close_s, window=14).rsi()
+
+	logger.info(
+		"Data ready: %d rows (%s → %s)",
+		len(df),
+		df.index[0].date(),
+		df.index[-1].date(),
+	)
+
+	logger.info("Rendering candlestick chart with EMA20/EMA50...")
+	fig_candle = candlestick_chart(df, ema_windows=[20, 50])
+	if fig_candle:
+		fig_candle.update_layout(title=f"{TICKER} — Candlestick + EMA20/50")
+		fig_candle.show()
+
+	logger.info("Rendering MACD chart...")
+	fig_macd = macd_chart(df)
+	if fig_macd:
+		fig_macd.update_layout(title=f"{TICKER} — MACD")
+		fig_macd.show()
+
+	logger.info("Rendering RSI chart...")
+	fig_rsi = rsi_chart(df)
+	if fig_rsi:
+		fig_rsi.update_layout(title=f"{TICKER} — RSI (14)")
+		fig_rsi.show()
+
+	logger.info("Rendering volume chart...")
+	fig_vol = volume_chart(df)
+	if fig_vol:
+		fig_vol.update_layout(title=f"{TICKER} — Volume & 20-day Avg")
+		fig_vol.show()
+
+	# Bollinger Bands columns (normally from ta.volatility.BollingerBands)
+	rolling_mean = close_s.rolling(window=20).mean()
+	rolling_std = close_s.rolling(window=20).std()
+	df["BB_mid"] = rolling_mean
+	df["BB_upper"] = rolling_mean + 2 * rolling_std
+	df["BB_lower"] = rolling_mean - 2 * rolling_std
+	df.dropna(inplace=True)
+
+	logger.info("Rendering Bollinger Bands chart...")
+	fig_bb = bollinger_chart(df)
+	if fig_bb:
+		fig_bb.update_layout(title=f"{TICKER} — Bollinger Bands (20, 2σ)")
+		fig_bb.show()
