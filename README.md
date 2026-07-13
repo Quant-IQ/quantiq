@@ -117,8 +117,10 @@ git push origin feat(scope)/your-change
 ```text
 quantiq/
 ├── src/
-│   ├── data/          # Data fetching and indicator calculation
-│   ├── strategy/      # Entry and exit logic
+│   ├── data/          # Fetching, indicators, ticker map, validation, charts
+│   ├── screener/      # Filter engine, config, cache, technical/fundamental filters
+│   ├── watchlist/     # Static/dynamic watchlists, persistence, manager
+│   ├── strategy/      # Entry/exit logic — base ABC, signals, SMA crossover, RSI mean-reversion
 │   ├── execution/     # Dhan API and order management
 │   └── dashboard/     # Streamlit app
 ├── backtest/          # Backtest results and reports
@@ -148,7 +150,7 @@ Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a PR. Key rules:
 - Never push directly to `main`
 - Never merge your own PR — all PRs require one reviewer
 - Write `Closes #<issue>` in your PR description to auto-close the linked issue
-- Branch naming: `feat/`, `fix/`, `data/`, `docs/`, `backtest/`
+- Branch naming: `feat(scope)/`, `fix(scope)/`, `data(scope)/`, `docs/`, `backtest/`
 
 ---
 
