@@ -45,9 +45,12 @@ class ScreeningEngine:
 
 		Returns:
 		    bool: True if the asset complies with the criteria validation rules.
+		      An empty condition list is vacuously true under AND (no
+		      constraints to fail) and vacuously false under OR (nothing to
+		      match).
 		"""
 		if not conditions:
-			return False
+			return self.logic_mode == "AND"
 
 		results = []
 		for cond in conditions:
@@ -65,7 +68,6 @@ class ScreeningEngine:
 			current_val = ticker_data[metric]
 
 			try:
-				# Fixes Issue 3 (CONCERN): Added relational boundary operator conditions
 				if operator == ">":
 					results.append(current_val > target_val)
 				elif operator == "<":

@@ -239,6 +239,8 @@ cache/*
 !cache/.gitkeep
 src/data/cache/**/*.parquet
 !src/data/cache/**/.gitkeep
+src/data/watchlists/*
+!src/data/watchlists/.gitkeep
 *.pkl
 *.csv
 

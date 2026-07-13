@@ -22,6 +22,9 @@ dhanhq==2.0.2
 
 # Dashboard
 streamlit==1.57.0
+streamlit-autorefresh==1.0.1
+fastapi==0.139.0
+uvicorn==0.47.0
 
 # Utilities
 python-dotenv==1.2.2

@@ -8,6 +8,7 @@ rendering limits without introducing unapproved matplotlib state dependencies.
 """
 
 import logging
+import re
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -436,36 +437,41 @@ def plot_ohlc(df: pd.DataFrame) -> go.Figure | None:
 			)
 		)
 
-		# Technical Indicator Overlays — Checks column mapping safely
-		if "SMA" in df.columns:
+		# Technical Indicator Overlays — Checks column mapping safely.
+		# indicators.py names columns SMA<window>/EMA<window> (e.g. SMA20,
+		# EMA50) and lowercase BB_upper/BB_lower — match those, not bare
+		# "SMA"/"EMA"/"BB_Upper"/"BB_Lower", which indicators.py never emits.
+		sma_cols = sorted(c for c in df.columns if re.fullmatch(r"SMA\d+", c))
+		for sma_col in sma_cols:
 			fig.add_trace(
 				go.Scatter(
 					x=df.index,
-					y=df["SMA"],
+					y=df[sma_col],
 					mode="lines",
 					line=dict(color="orange", width=1.5),
-					name="SMA",
+					name=sma_col,
 					visible=True,
 				)
 			)
 
-		if "EMA" in df.columns:
+		ema_cols = sorted(c for c in df.columns if re.fullmatch(r"EMA\d+", c))
+		for ema_col in ema_cols:
 			fig.add_trace(
 				go.Scatter(
 					x=df.index,
-					y=df["EMA"],
+					y=df[ema_col],
 					mode="lines",
 					line=dict(color="#1f77b4", width=1.5),
-					name="EMA",
+					name=ema_col,
 					visible=True,
 				)
 			)
 
-		if "BB_Upper" in df.columns and "BB_Lower" in df.columns:
+		if "BB_upper" in df.columns and "BB_lower" in df.columns:
 			fig.add_trace(
 				go.Scatter(
 					x=df.index,
-					y=df["BB_Upper"],
+					y=df["BB_upper"],
 					mode="lines",
 					line=dict(color="rgba(231, 76, 60, 0.5)", width=1, dash="dash"),
 					name="BB Upper",
@@ -475,7 +481,7 @@ def plot_ohlc(df: pd.DataFrame) -> go.Figure | None:
 			fig.add_trace(
 				go.Scatter(
 					x=df.index,
-					y=df["BB_Lower"],
+					y=df["BB_lower"],
 					mode="lines",
 					line=dict(color="rgba(231, 76, 60, 0.5)", width=1, dash="dash"),
 					name="BB Lower",

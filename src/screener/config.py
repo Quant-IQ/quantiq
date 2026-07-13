@@ -13,6 +13,7 @@ from typing import Any, Dict, List
 logger = logging.getLogger(__name__)
 
 VALID_LOGIC_MODES = {"AND", "OR"}
+VALID_OPERATORS = {"<", ">", "==", "<=", ">="}
 
 
 @dataclass
@@ -58,6 +59,12 @@ class ScreenerConfig:
 			if missing:
 				raise ValueError(
 					f"condition[{i}] missing required key(s) {missing}: {cond}"
+				)
+
+			if cond["operator"] not in VALID_OPERATORS:
+				raise ValueError(
+					f"condition[{i}] has unsupported operator {cond['operator']!r}: {cond}. "
+					f"Must be one of {sorted(VALID_OPERATORS)}"
 				)
 
 	@classmethod
