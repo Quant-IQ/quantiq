@@ -404,36 +404,33 @@ Labels: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-lead`, 
 | 0     | 1      | —           | Every member: first commit (`members/name.md`, removed post-Phase-2) | Complete    |
 | 1     | 2–4    | —           | `scripts/<handle>.py` — fetch NSE data, SMA20/50 stats (removed post-Phase-2) | Complete    |
 | 2     | 4–5    | 14 Jun 2026 | `notebooks/market_analysis.ipynb` — group NIFTY50 analysis (removed post-Phase-2) | Complete    |
-| 3     | 6–8    | 5 Jul 2026  | `src/` build — data, screener, watchlists, strategy        | Active (overdue — 8 issues remain) |
+| 3     | 6–8    | 5 Jul 2026  | `src/` build — data, screener, watchlists, strategy        | Active (overdue — 5 issues remain, mostly backtest/docs) |
 | 4     | 9–10   | 19 Jul 2026 | Execution layer + paper trading via Dhan API               | Active (started early, overlapping Phase 3) |
 | 5     | 11–12  | 2 Aug 2026  | Dashboard, deploy, public repo, full README                | Not started |
 
-### Current Phase: Phase 3/4 overlap (Week 7, as of 13 Jul 2026)
+### Current Phase: Phase 3/4 overlap (Week 7, as of 14 Jul 2026)
 
-Phase 3 deadline (5 Jul 2026) has passed with 8 issues still open — mostly strategy spec, backtest, and doc tasks, not core `src/` build (data/screener/watchlist modules are functionally done and merged). Phase 4 execution-layer work (Dhan client wrapper, order manager, trade logger) started concurrently and is already landing PRs. Treat Phase 3 and Phase 4 as overlapping in practice, not strictly sequential.
+Phase 3 deadline (5 Jul 2026) has passed; only backtest-reporting and decisions-log issues remain (#34-#38) — all core `src/` build work (data/screener/watchlist/strategy modules, including screener/filters #208 and watchlist system #209) is merged and closed. Strategy spec (#31) closed after two competing docs (`docs/strategyspec_GT.md`, `docs/strategyspec_AV.md`) both merged — content not yet reconciled, flagged as a follow-up. Phase 4 execution-layer work (Dhan client wrapper #213, trade logger #215) merged; order manager (#216/PR #348) blocked on review feedback (missing docstrings). Treat Phase 3 and Phase 4 as overlapping in practice, not strictly sequential.
 
-### GitHub Issues Snapshot — 13 Jul 2026: 212 total | 41 open | 171 closed
+### GitHub Issues Snapshot — 14 Jul 2026: 212 total | 37 open | 175 closed
 
 ### Open Issues — Phase 2 (1 open)
 
 | # | Title | Assignee |
 | --- | ----- | -------- |
-| 263 | SMA/AJ | AJ |
+| 263 | SMA/AJ — orphaned, target notebook removed by repo trim | AJ |
 
-### Open Issues — Phase 3 (8 open)
+### Open Issues — Phase 3 (5 open)
 
 | # | Title | Assignee |
 | --- | ----- | -------- |
-| 31 | Write strategy spec document | GT |
 | 34 | Run backtest with vectorbt | AV, GT |
 | 35 | Add realistic costs to backtest | AV |
 | 36 | Document backtest results | SmS |
 | 37 | Update README — backtest results | SmS |
 | 38 | Write Decisions Log — strategy choices | RS |
-| 208 | screener/filters — technical and fundamental | AV |
-| 209 | watchlist system — static, dynamic, persistence, manager | AR, SmS |
 
-### Open Issues — Phase 4 (15 open)
+### Open Issues — Phase 4 (14 open)
 
 | # | Title | Assignee |
 | --- | ----- | -------- |
@@ -447,10 +444,9 @@ Phase 3 deadline (5 Jul 2026) has passed with 8 issues still open — mostly str
 | 46 | Build Streamlit dashboard | EB |
 | 47 | Validate live signals vs backtest | AV, GT |
 | 48 | Write Notion log — Weeks 10 & 11 | EB |
-| 213 | dhan_client.py — authenticated Dhan wrapper + rate limiter | AR |
 | 214 | websocket_feed.py — live tick feed with auto-reconnect | AR |
-| 215 | logger.py — paper trade signal log to CSV | AR, AK |
-| 216 | order_manager.py — v0.0.2 scaffold | AR, RT |
+| 215 | logger.py — paper trade signal log to CSV — PR #343 approved, awaiting merge | AR, AK |
+| 216 | order_manager.py — v0.0.2 scaffold — PR #348 changes requested (missing docstrings) | AR, RT |
 | 217 | integration test scaffold — end-to-end signal pipeline | RS |
 
 ### Open Issues — Phase 5 (17 open)
@@ -460,7 +456,7 @@ Phase 3 deadline (5 Jul 2026) has passed with 8 issues still open — mostly str
 | 49 | Final code clean-up — add all docstrings | RS |
 | 50 | Final README — all sections complete | EB |
 | 51 | Deploy Streamlit dashboard | EB |
-| 52 | Run public repo checklist | RS |
+| 52 | Run public repo checklist — likely duplicate of #248 (that one has the full checklist body, sub-issue of #220) | RS |
 | 53 | Record 2-minute demo video | RS |
 | 54 | Write LinkedIn wrap post draft | RS |
 | 55 | Notion final project summary | EB |
@@ -475,17 +471,20 @@ Phase 3 deadline (5 Jul 2026) has passed with 8 issues still open — mostly str
 | 247 | {PHASE-5} streamlit_deploy/EB | EB |
 | 248 | {PHASE-5} public_repo_checklist/RS | RS |
 
-### Closed Issues — Summary (171 closed)
+### Closed Issues — Summary (175 closed)
 
 | Phase | Count | Notes |
 | ----- | ----- | ----- |
 | Phase-0 | 72 | Per-member onboarding — clone, git, varsity, discord, branch creation |
 | Phase-1 | 18 | Setup, scripts, analysis, webhook, GitHub Pages, housekeeping |
 | Phase-2 | 49 | Indicators, notebook sections, README/Notion updates — notebook itself later removed as scaffolding |
-| Phase-3 | 24 | Indicators (EMA/RSI/MACD/ATR/VWAP), validate.py, visualise.py, screener config/engine/runner, ticker_map, correlation |
+| Phase-3 | 28 | Indicators (EMA/RSI/MACD/ATR/VWAP), validate.py, visualise.py, screener config/engine/runner/filters (#208), ticker_map, correlation, watchlist system (#209), strategy spec (#31) |
 | Misc | 8 | Duplicates and non-phase-tagged housekeeping |
 
-**⚠ Attention items:** none currently flagged — all prior attention items (#122, #261, #28/#29/#30) resolved and closed.
+**⚠ Attention items:**
+- `#263` — orphaned, empty body, no discussion; target notebook removed by the repo trim (PR #351). Needs a close-with-note or scope redefinition.
+- `#52` — likely duplicate of `#248` (same "public repo checklist" task; #248 has the real checklist body and is linked as a sub-issue of #220).
+- Strategy spec content (`docs/strategyspec_GT.md` vs `docs/strategyspec_AV.md`) unreconciled — both merged under #31, AV's doc introduces Ichimoku Cloud (not in confirmed tech stack) and uses prose format instead of the config-driven ST1 spec.
 
 ### Notebook Section Order (historical — Phase 2, removed)
 
