@@ -51,7 +51,7 @@ git checkout main
 git pull origin main
 
 # Step 2 — Create a branch for your work
-git checkout -b feature/your-feature-name
+git checkout -b feat(scope)/your-feature-name
 
 # Step 3 — Edit files in VS Code, save them
 
@@ -65,7 +65,7 @@ git add -p                  # stage chunks interactively (recommended for mixed 
 git commit -m "feat(data): add SMA-20 to data pipeline"
 
 # Step 6 — Push your branch to GitHub
-git push origin feature/your-feature-name
+git push origin feat(scope)/your-feature-name
 
 # Step 7 — Open a Pull Request on GitHub.com
 ```
@@ -137,7 +137,7 @@ Every change enters `main` through a PR. No exceptions, even for the Project Lea
 
 1. **Finish on your branch:** Code runs locally. Tested. No `print()` debugging left in.
 2. **Sync with main first:** `git pull origin main` then `git merge main`. Resolve conflicts before pushing.
-3. **Push your branch:** `git push origin feature/your-branch-name`.
+3. **Push your branch:** `git push origin feat(scope)/your-branch-name`.
 4. **Fill the PR description:** Use the auto-loaded template. Fill every section. Write "Closes #N" to link your issue.
 5. **Assign a reviewer:** Right sidebar → Reviewers → pick a teammate. Never leave it blank.
 6. **Post in #dev on Discord:** "PR #14 up — needs 1 review." Then leave it alone.
@@ -194,12 +194,12 @@ git checkout main
 git pull origin main
 
 # Step 3 — Delete your local branch (it's already in main, so this is safe)
-git branch -d feature/your-feature-name
+git branch -d feat(scope)/your-feature-name
 # Use -D (capital) only if git refuses -d and you are sure the branch is merged
-git branch -D feature/your-feature-name
+git branch -D feat(scope)/your-feature-name
 
 # Step 4 — Prune stale remote-tracking refs
-# This removes entries like "origin/feature/your-feature-name" that no longer exist on GitHub
+# This removes entries like "origin/feat(scope)/your-feature-name" that no longer exist on GitHub
 git fetch --prune
 
 # Step 5 — Verify your branch is gone
@@ -343,10 +343,10 @@ git push origin your-branch
 
 | Command | What it does |
 | --- | --- |
-| `git checkout -b feature/name` | Create + switch to new branch |
+| `git checkout -b feat(scope)/name` | Create + switch to new branch |
 | `git checkout main` | Switch to main branch |
 | `git branch` | List all local branches |
-| `git branch -d feature/name` | Delete a branch locally after merge |
+| `git branch -d feat(scope)/name` | Delete a branch locally after merge |
 | `git merge main` | Merge latest main into current branch |
 
 ### History & Undo

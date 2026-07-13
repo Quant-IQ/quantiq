@@ -15,7 +15,7 @@ QuantIQ is a collaborative 12-week project to build a working paper-trading bot 
 
 **Scope:** Strategy design → backtesting → live paper trading via Dhan API
 **Market:** NSE equity (with F&O context)
-**Timeline:** 12 weeks · 5 phases · public after Week 8
+**Timeline:** 12 weeks · 5 phases · public since Week 7
 
 ---
 
@@ -38,7 +38,7 @@ Phase 1 roles assigned 17 May 2026. Reviewed again at end of Phase 1. P = primar
 | AK   | Dev / Infra (P) \| Data Engineering (S)               | Active |
 | ShS  | Analyst / Docs (P) \| Dev / Infra (S)                 | Active |
 
-_Roles reviewed end of Phase 1 / start of Phase 2._
+_Roles reviewed at Phase 2 sync (1 Jun 2026); sub-team leads assigned (see CLAUDE.md §8)._
 
 ---
 
@@ -47,11 +47,11 @@ _Roles reviewed end of Phase 1 / start of Phase 2._
 | Phase                   | Weeks | Deliverable                                   | Status         |
 | :---------------------- | :---: | :-------------------------------------------- | :------------- |
 | 0 — Onboarding          |   1   | First commit from every member                | ✅ Complete    |
-| 1 — Foundations         |  2–4  | Python script: fetch + analyse NSE stock data | 🔄 In Progress |
-| 2 — Data & Analysis     |  5–7  | Shared `market_analysis.ipynb` on GitHub      | ⏳ Pending     |
-| 3 — Strategy & Backtest |  8–9  | Backtest report: Sharpe, drawdown, win rate   | ⏳ Pending     |
-| 4 — Paper Trading       | 10–11 | Bot running across 3+ live trading sessions   | ⏳ Pending     |
-| 5 — Ship It             |  12   | Portfolio-ready public GitHub repo            | ⏳ Pending     |
+| 1 — Foundations         |  2–4  | Individual NSE data analysis scripts          | ✅ Complete    |
+| 2 — Data & Analysis     |  4–5  | Group NIFTY50 analysis                        | ✅ Complete    |
+| 3 — Strategy & Backtest |  6–8  | `src/` data/screener/watchlist build + backtest report | 🔄 In Progress (overdue, near done) |
+| 4 — Paper Trading       | 9–10  | Dhan client, execution loop, 3+ paper sessions | 🔄 In Progress (started early) |
+| 5 — Ship It             | 11–12 | Dashboard, deploy, portfolio-ready repo       | ⏳ Pending     |
 
 ---
 
@@ -133,7 +133,7 @@ quantiq/
 | Tool     | Purpose                                              |
 | :------- | :--------------------------------------------------- |
 | Discord  | Primary team communication — all project discussions |
-| AppFlowy | Docs, weekly log, decisions log, Kanban overview     |
+| Notion   | Docs, weekly log, decisions log, Kanban overview     |
 | GitHub   | Code, PRs, Issues, Projects board                    |
 | WhatsApp | Urgent personal messages only — not project tracking |
 
@@ -159,4 +159,4 @@ Algo trading on your own account for personal use is legal in India under SEBI g
 ---
 
 _README is a living document. Updated at the end of each phase by the Analyst / Docs role._
-_Last updated: Week 1_
+_Last updated: Week 7 (13 Jul 2026)_
