@@ -10,7 +10,7 @@ First off, thank you for contributing to QuantIQ! Git is how we collaborate with
 2. If not, create an Issue and assign it to yourself.
 3. Pull latest main: `git pull origin main`
 
-**Branch naming:** `feature/description` | `fix/description` | `data/description` | `docs/description` | `backtest/description` | `members/your-name`
+**Branch naming:** `feat(scope)/description` | `fix(scope)/description` | `data(scope)/description` | `docs/description` | `backtest/description`
 
 **Commit format:** `type(scope): short description` (max 72 chars, lowercase)
 Types: `feat` `fix` `docs` `style` `refactor` `test` `build` `chore`
@@ -30,9 +30,6 @@ Put work in the right directory from the start — wrong location = PR blocked.
 
 | Phase | What | Where | File pattern |
 | ----- | ---- | ------ | ------------ |
-| 0 | Member intro file | `members/` | `<firstname>.md` |
-| 1 | Individual analysis scripts | `scripts/` | `<handle>.py` |
-| 2 | Group NIFTY50 analysis | `notebooks/` | `market_analysis.ipynb` |
 | 3 | Strategy backtest | `backtest/` | `strategy_v1.ipynb` |
 | 3+ | Production data pipeline | `src/data/` | `fetch.py`, `indicators.py`, `validate.py` |
 | 3+ | Signal generation | `src/strategy/` | `base.py`, `sma_crossover.py`, `signals.py` |
@@ -40,9 +37,7 @@ Put work in the right directory from the start — wrong location = PR blocked.
 | 5 | Dashboard | `src/dashboard/` | `app.py` |
 | All | Trade signal log (gitignored) | `logs/` | `trades.csv` |
 
-**Do not create files in `src/` before Phase 3** — use `scripts/` for Phase 1 exploration.
-`scripts/` has a lower bar than `src/`: no mandatory docstrings or type hints.
-Still required in `scripts/`: `.NS` suffix on NSE tickers, no hardcoded credentials, `logging` not `print()`.
+`scripts/`, `notebooks/`, `members/` (Phase 0–2 scaffolding) removed once no longer needed for the app to function. All new code goes in `src/`.
 
 ---
 
@@ -83,12 +78,11 @@ git push origin feature/your-feature-name
 
 | Prefix | When to Use | Example |
 | --- | --- | --- |
-| `feature/` | New functionality or module | `feature/sma-crossover-strategy` |
-| `fix/` | Bug fix — something is broken | `fix/api-auth-token-expiry` |
-| `data/` | Data pipeline or feed work | `data/nifty50-pipeline-refactor` |
-| `docs/` | README, docstrings, comments only | `docs/readme-phase2-update` |
+| `feat(scope)/` | New functionality or module | `feat(strategy)/sma-crossover` |
+| `fix(scope)/` | Bug fix — something is broken | `fix(broker)/api-auth-token-expiry` |
+| `data(scope)/` | Data pipeline or feed work | `data(pipeline)/nifty50-refactor` |
+| `docs/` | README, docstrings, comments only | `docs/readme-phase3-update` |
 | `backtest/` | Backtesting scripts and experiments | `backtest/rsi-mean-reversion-v2` |
-| `members/` | Your Week 1 personal file ONLY | `members/your-name` |
 
 ---
 

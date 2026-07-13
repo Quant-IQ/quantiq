@@ -88,11 +88,11 @@ cp .env.example .env
 git status
 
 # 7. Make your first contribution
-git checkout -b members/yourname
-# Create members/yourname.md with your name, role, and goals
-git add members/yourname.md
-git commit -m "docs: add yourname profile"
-git push origin members/yourname
+git checkout -b feat(scope)/your-change
+# Make your change under src/
+git add <changed files>
+git commit -m "feat(scope): your change"
+git push origin feat(scope)/your-change
 # GitHub will print a URL in the terminal — open it to submit your PR
 ```
 
@@ -121,10 +121,8 @@ quantiq/
 │   ├── strategy/      # Entry and exit logic
 │   ├── execution/     # Dhan API and order management
 │   └── dashboard/     # Streamlit app
-├── notebooks/         # Jupyter analysis files
 ├── backtest/          # Backtest results and reports
 ├── logs/              # Trade signal logs (CSV)
-├── members/           # One profile file per team member
 └── docs/              # Architecture notes
 ```
 
@@ -150,7 +148,7 @@ Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a PR. Key rules:
 - Never push directly to `main`
 - Never merge your own PR — all PRs require one reviewer
 - Write `Closes #<issue>` in your PR description to auto-close the linked issue
-- Branch naming: `feature/`, `fix/`, `data/`, `docs/`, `backtest/`, `members/`
+- Branch naming: `feat/`, `fix/`, `data/`, `docs/`, `backtest/`
 
 ---
 
