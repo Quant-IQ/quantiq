@@ -56,14 +56,8 @@ quantiq/
 │   │   └── logger.py               # Trade signal logging to logs/trades.csv
 │   └── dashboard/                   # Streamlit UI
 │       └── app.py                   # Live price + current signal + trade log view
-├── scripts/                         # Phase 1 individual analysis scripts + general utilities
-│   └── <handle>.py                  # One file per member — fetch NSE data, print stats
 ├── backtest/
 │   └── strategy_v1.ipynb            # vectorbt backtest — SMA crossover on NIFTY 1yr
-├── notebooks/
-│   └── market_analysis.ipynb        # Phase 2 group notebook — NIFTY50 analysis
-├── members/                         # One markdown file per team member
-│   └── [name].md
 ├── logs/
 │   └── trades.csv                   # Paper trade signal log — gitignored
 └── docs/
@@ -72,7 +66,7 @@ quantiq/
 
 **All `src/` directories scaffolded with `.gitkeep`. `src/` implementation begins Phase 3.**
 **All `src/` files above: planned targets, not current files.**
-**Phase 1 work goes in `scripts/` — see §7. `scripts/` may be cleaned before repo goes public (Phase 5).**
+**Phase 1–2 scaffolding (`scripts/`, `notebooks/`, `members/`) removed once no longer needed for the app to function — see §7.**
 No files outside this structure without discussing with Project Lead (RS).
 
 ---
@@ -408,9 +402,9 @@ Labels: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-lead`, 
 
 | Phase | Weeks  | Due Date    | Core Deliverable                                           | Status      |
 | ----- | ------ | ----------- | ---------------------------------------------------------- | ----------- |
-| 0     | 1      | —           | Every member: first commit (`members/name.md`)             | Complete    |
-| 1     | 2–4    | —           | `scripts/<handle>.py` — fetch NSE data, SMA20/50 stats     | Complete    |
-| 2     | 4–5    | 14 Jun 2026 | `notebooks/market_analysis.ipynb` — group NIFTY50 analysis | Active      |
+| 0     | 1      | —           | Every member: first commit (`members/name.md`, removed post-Phase-2) | Complete    |
+| 1     | 2–4    | —           | `scripts/<handle>.py` — fetch NSE data, SMA20/50 stats (removed post-Phase-2) | Complete    |
+| 2     | 4–5    | 14 Jun 2026 | `notebooks/market_analysis.ipynb` — group NIFTY50 analysis (removed post-Phase-2) | Active      |
 | 3     | 6–8    | 5 Jul 2026  | `src/` build — data, screener, watchlists, strategy        | Not started |
 | 4     | 9–10   | 19 Jul 2026 | Execution layer + paper trading via Dhan API               | Not started |
 | 5     | 11–12  | 2 Aug 2026  | Dashboard, deploy, public repo, full README                | Not started |
@@ -557,27 +551,9 @@ Phase 2 deliverable: `notebooks/market_analysis.ipynb` — group NIFTY50 analysi
 - `#261 RSI/RT` — unassigned; RT's notebook section needs assignment
 - `#28`, `#29`, `#30` — all unassigned docs tasks (Notion log, README, Streamlit basics)
 
-### Notebook Section Order — `notebooks/market_analysis.ipynb`
+### Notebook Section Order (historical — Phase 2, removed)
 
-Sector-grouped. RS + GT own section 13 (correlation heatmap).
-
-| # | Sector | Ticker | Member |
-| --- | ------ | ------ | ------ |
-| 1 | Energy/Conglomerate | RELIANCE.NS | AJ |
-| 2 | IT | TCS.NS | AV |
-| 3 | IT | INFY.NS | AK |
-| 4 | IT | HCLTECH.NS | SS |
-| 5 | Banking | HDFCBANK.NS | AR |
-| 6 | Banking | ICICIBANK.NS | EB |
-| 7 | Banking | AXISBANK.NS | ShS |
-| 8 | Auto | TVS.NS | RS |
-| 9 | Auto | M&M.NS | GT |
-| 10 | Infrastructure | LT.NS | RT |
-| 11 | Consumer | TITAN.NS | NS |
-| 12 | Defense | APOLLO.NS | SmS |
-| 13 | Cross-sector | Correlation heatmap | RS + GT |
-
-**Member section template:** fetch → summary stats → candlestick + EMA20/50 → MACD → RSI → volume. Fundamentals via `yf.Ticker.info` with None-guards: P/E, EPS growth, D/E, Cash/Debt, ICR, PEG (5Y+1Y), reserve & surplus, promoter%, pledged shares%, dividend yield. End with 3–5 sentence observation.
+`notebooks/market_analysis.ipynb` removed post-Phase-2 as non-essential scaffolding. Section order/ownership record kept here for history only; no longer applicable.
 
 ---
 
@@ -1118,7 +1094,7 @@ Severity tags: `BLOCKING` (merge must not proceed), `CONCERN` (needs discussion 
 
 ### When Generating New Modules
 
-**Phase 1 scripts go in `scripts/<handle>.py` — not in `src/`.** Lower bar applies: no mandatory docstrings or type hints, no `if __name__ == "__main__"` required. Still required: `.NS` suffix on NSE tickers, no hardcoded credentials, `logging` not `print()`.
+`scripts/` (Phase 1 individual analysis scripts) removed post-Phase-2 as non-essential scaffolding. All new code goes in `src/`.
 
 For `src/` modules (Phase 3+):
 
