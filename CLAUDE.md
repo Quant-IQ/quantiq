@@ -314,12 +314,11 @@ def rate_limited_order(order_params: dict) -> dict:
 ### Branch Naming
 
 ```text
-feature/short-description        # New functionality
-fix/short-description            # Bug fixes
-data/short-description           # Data pipeline changes
+feat(scope)/short-description    # New functionality
+fix(scope)/short-description     # Bug fixes
+data(scope)/short-description    # Data pipeline changes
 docs/short-description           # Documentation only
 backtest/short-description       # Backtesting scripts
-members/your-name                # Phase 0 onboarding commit
 ```
 
 ### Commit Format
