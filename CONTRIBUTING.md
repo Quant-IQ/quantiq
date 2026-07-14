@@ -10,7 +10,7 @@ First off, thank you for contributing to QuantIQ! Git is how we collaborate with
 2. If not, create an Issue and assign it to yourself.
 3. Pull latest main: `git pull origin main`
 
-**Branch naming:** `feature/description` | `fix/description` | `data/description` | `docs/description` | `backtest/description` | `members/your-name`
+**Branch naming:** `feat(scope)/description` | `fix(scope)/description` | `data(scope)/description` | `docs/description` | `backtest/description`
 
 **Commit format:** `type(scope): short description` (max 72 chars, lowercase)
 Types: `feat` `fix` `docs` `style` `refactor` `test` `build` `chore`
@@ -30,9 +30,6 @@ Put work in the right directory from the start — wrong location = PR blocked.
 
 | Phase | What | Where | File pattern |
 | ----- | ---- | ------ | ------------ |
-| 0 | Member intro file | `members/` | `<firstname>.md` |
-| 1 | Individual analysis scripts | `scripts/` | `<handle>.py` |
-| 2 | Group NIFTY50 analysis | `notebooks/` | `market_analysis.ipynb` |
 | 3 | Strategy backtest | `backtest/` | `strategy_v1.ipynb` |
 | 3+ | Production data pipeline | `src/data/` | `fetch.py`, `indicators.py`, `validate.py` |
 | 3+ | Signal generation | `src/strategy/` | `base.py`, `sma_crossover.py`, `signals.py` |
@@ -40,9 +37,7 @@ Put work in the right directory from the start — wrong location = PR blocked.
 | 5 | Dashboard | `src/dashboard/` | `app.py` |
 | All | Trade signal log (gitignored) | `logs/` | `trades.csv` |
 
-**Do not create files in `src/` before Phase 3** — use `scripts/` for Phase 1 exploration.
-`scripts/` has a lower bar than `src/`: no mandatory docstrings or type hints.
-Still required in `scripts/`: `.NS` suffix on NSE tickers, no hardcoded credentials, `logging` not `print()`.
+`scripts/`, `notebooks/`, `members/` (Phase 0–2 scaffolding) removed once no longer needed for the app to function. All new code goes in `src/`.
 
 ---
 
@@ -56,7 +51,7 @@ git checkout main
 git pull origin main
 
 # Step 2 — Create a branch for your work
-git checkout -b feature/your-feature-name
+git checkout -b feat(scope)/your-feature-name
 
 # Step 3 — Edit files in VS Code, save them
 
@@ -70,7 +65,7 @@ git add -p                  # stage chunks interactively (recommended for mixed 
 git commit -m "feat(data): add SMA-20 to data pipeline"
 
 # Step 6 — Push your branch to GitHub
-git push origin feature/your-feature-name
+git push origin feat(scope)/your-feature-name
 
 # Step 7 — Open a Pull Request on GitHub.com
 ```
@@ -83,12 +78,11 @@ git push origin feature/your-feature-name
 
 | Prefix | When to Use | Example |
 | --- | --- | --- |
-| `feature/` | New functionality or module | `feature/sma-crossover-strategy` |
-| `fix/` | Bug fix — something is broken | `fix/api-auth-token-expiry` |
-| `data/` | Data pipeline or feed work | `data/nifty50-pipeline-refactor` |
-| `docs/` | README, docstrings, comments only | `docs/readme-phase2-update` |
+| `feat(scope)/` | New functionality or module | `feat(strategy)/sma-crossover` |
+| `fix(scope)/` | Bug fix — something is broken | `fix(broker)/api-auth-token-expiry` |
+| `data(scope)/` | Data pipeline or feed work | `data(pipeline)/nifty50-refactor` |
+| `docs/` | README, docstrings, comments only | `docs/readme-phase3-update` |
 | `backtest/` | Backtesting scripts and experiments | `backtest/rsi-mean-reversion-v2` |
-| `members/` | Your Week 1 personal file ONLY | `members/your-name` |
 
 ---
 
@@ -143,7 +137,7 @@ Every change enters `main` through a PR. No exceptions, even for the Project Lea
 
 1. **Finish on your branch:** Code runs locally. Tested. No `print()` debugging left in.
 2. **Sync with main first:** `git pull origin main` then `git merge main`. Resolve conflicts before pushing.
-3. **Push your branch:** `git push origin feature/your-branch-name`.
+3. **Push your branch:** `git push origin feat(scope)/your-branch-name`.
 4. **Fill the PR description:** Use the auto-loaded template. Fill every section. Write "Closes #N" to link your issue.
 5. **Assign a reviewer:** Right sidebar → Reviewers → pick a teammate. Never leave it blank.
 6. **Post in #dev on Discord:** "PR #14 up — needs 1 review." Then leave it alone.
@@ -200,12 +194,12 @@ git checkout main
 git pull origin main
 
 # Step 3 — Delete your local branch (it's already in main, so this is safe)
-git branch -d feature/your-feature-name
+git branch -d feat(scope)/your-feature-name
 # Use -D (capital) only if git refuses -d and you are sure the branch is merged
-git branch -D feature/your-feature-name
+git branch -D feat(scope)/your-feature-name
 
 # Step 4 — Prune stale remote-tracking refs
-# This removes entries like "origin/feature/your-feature-name" that no longer exist on GitHub
+# This removes entries like "origin/feat(scope)/your-feature-name" that no longer exist on GitHub
 git fetch --prune
 
 # Step 5 — Verify your branch is gone
@@ -349,10 +343,10 @@ git push origin your-branch
 
 | Command | What it does |
 | --- | --- |
-| `git checkout -b feature/name` | Create + switch to new branch |
+| `git checkout -b feat(scope)/name` | Create + switch to new branch |
 | `git checkout main` | Switch to main branch |
 | `git branch` | List all local branches |
-| `git branch -d feature/name` | Delete a branch locally after merge |
+| `git branch -d feat(scope)/name` | Delete a branch locally after merge |
 | `git merge main` | Merge latest main into current branch |
 
 ### History & Undo

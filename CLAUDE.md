@@ -19,7 +19,7 @@
 | Secondary goal   | Learning vehicle for a mixed-skill team                      |
 | Tertiary goal    | Portfolio piece for tech and finance internship applications |
 | Project duration | 12 weeks, 5 phases                                           |
-| Repo visibility  | Private until Phase 3 (~Week 8), then public                 |
+| Repo visibility  | Public (switched during Phase 3, ~Week 7)                    |
 
 **Do not suggest going live with real capital.** Paper trading only until all members agree and at least 2–3 weeks of paper logs reviewed.
 
@@ -56,14 +56,8 @@ quantiq/
 │   │   └── logger.py               # Trade signal logging to logs/trades.csv
 │   └── dashboard/                   # Streamlit UI
 │       └── app.py                   # Live price + current signal + trade log view
-├── scripts/                         # Phase 1 individual analysis scripts + general utilities
-│   └── <handle>.py                  # One file per member — fetch NSE data, print stats
 ├── backtest/
 │   └── strategy_v1.ipynb            # vectorbt backtest — SMA crossover on NIFTY 1yr
-├── notebooks/
-│   └── market_analysis.ipynb        # Phase 2 group notebook — NIFTY50 analysis
-├── members/                         # One markdown file per team member
-│   └── [name].md
 ├── logs/
 │   └── trades.csv                   # Paper trade signal log — gitignored
 └── docs/
@@ -72,7 +66,7 @@ quantiq/
 
 **All `src/` directories scaffolded with `.gitkeep`. `src/` implementation begins Phase 3.**
 **All `src/` files above: planned targets, not current files.**
-**Phase 1 work goes in `scripts/` — see §7. `scripts/` may be cleaned before repo goes public (Phase 5).**
+**Phase 1–2 scaffolding (`scripts/`, `notebooks/`, `members/`) removed once no longer needed for the app to function — see §7.**
 No files outside this structure without discussing with Project Lead (RS).
 
 ---
@@ -320,12 +314,11 @@ def rate_limited_order(order_params: dict) -> dict:
 ### Branch Naming
 
 ```text
-feature/short-description        # New functionality
-fix/short-description            # Bug fixes
-data/short-description           # Data pipeline changes
+feat(scope)/short-description    # New functionality
+fix(scope)/short-description     # Bug fixes
+data(scope)/short-description    # Data pipeline changes
 docs/short-description           # Documentation only
 backtest/short-description       # Backtesting scripts
-members/your-name                # Phase 0 onboarding commit
 ```
 
 ### Commit Format
@@ -408,132 +401,68 @@ Labels: `phase-0` through `phase-5`, `data`, `dev`, `docs`, `quant`, `co-lead`, 
 
 | Phase | Weeks  | Due Date    | Core Deliverable                                           | Status      |
 | ----- | ------ | ----------- | ---------------------------------------------------------- | ----------- |
-| 0     | 1      | —           | Every member: first commit (`members/name.md`)             | Complete    |
-| 1     | 2–4    | —           | `scripts/<handle>.py` — fetch NSE data, SMA20/50 stats     | Complete    |
-| 2     | 4–5    | 14 Jun 2026 | `notebooks/market_analysis.ipynb` — group NIFTY50 analysis | Active      |
-| 3     | 6–8    | 5 Jul 2026  | `src/` build — data, screener, watchlists, strategy        | Not started |
-| 4     | 9–10   | 19 Jul 2026 | Execution layer + paper trading via Dhan API               | Not started |
+| 0     | 1      | —           | Every member: first commit (`members/name.md`, removed post-Phase-2) | Complete    |
+| 1     | 2–4    | —           | `scripts/<handle>.py` — fetch NSE data, SMA20/50 stats (removed post-Phase-2) | Complete    |
+| 2     | 4–5    | 14 Jun 2026 | `notebooks/market_analysis.ipynb` — group NIFTY50 analysis (removed post-Phase-2) | Complete    |
+| 3     | 6–8    | 5 Jul 2026  | `src/` build — data, screener, watchlists, strategy        | Active (overdue — 5 issues remain, mostly backtest/docs) |
+| 4     | 9–10   | 19 Jul 2026 | Execution layer + paper trading via Dhan API               | Active (started early, overlapping Phase 3) |
 | 5     | 11–12  | 2 Aug 2026  | Dashboard, deploy, public repo, full README                | Not started |
 
-### Current Phase: Phase 2 — Market Analysis (Week 4, started 1 June 2026)
+### Current Phase: Phase 3/4 overlap (Week 7, as of 14 Jul 2026)
 
-Phase 2 deliverable: `notebooks/market_analysis.ipynb` — group NIFTY50 analysis. Phase 2 sync held **1 June 2026**. Sub-team leads and Co-Lead confirmed at sync. Deadline: **14 Jun 2026**.
+Phase 3 deadline (5 Jul 2026) has passed; only backtest-reporting and decisions-log issues remain (#34-#38) — all core `src/` build work (data/screener/watchlist/strategy modules, including screener/filters #208 and watchlist system #209) is merged and closed. Strategy spec (#31) closed after two competing docs (`docs/strategyspec_GT.md`, `docs/strategyspec_AV.md`) both merged — content not yet reconciled, flagged as a follow-up. Phase 4 execution-layer work (Dhan client wrapper #213, trade logger #215) merged; order manager (#216/PR #348) blocked on review feedback (missing docstrings). Treat Phase 3 and Phase 4 as overlapping in practice, not strictly sequential.
 
-### GitHub Issues Snapshot — 7 Jun 2026: 197 total | 101 open | 96 closed
+### GitHub Issues Snapshot — 14 Jul 2026: 212 total | 37 open | 175 closed
 
-### Open Issues — Phase 2 (27 open)
-
-| # | Title | Assignee | Notes |
-| --- | ----- | -------- | ----- |
-| 21 | [PHASE-2] Learn pandas fundamentals | RS | |
-| 23 | [PHASE-2] Add SMA and EMA indicators | RS | |
-| 25 | [PHASE-2] Build plotly candlestick chart | GT | |
-| 26 | [PHASE-2] Contribute section to market_analysis.ipynb | RS | |
-| 27 | [PHASE-2] Add correlation heatmap to notebook | RT | section 13 |
-| 28 | [PHASE-2] Write Notion log — Weeks 4 & 5 | unassigned | |
-| 29 | [PHASE-2] Update README — Phase 2 progress | unassigned | |
-| 30 | [PHASE-2] Learn Streamlit basics | unassigned | |
-| 114 | Pandas/RS | RS | |
-| 115 | [PHASE-2] Add SMA indicators | RS | |
-| 116 | [PHASE-2] Add EMA indicators | AV | |
-| 117 | SMA/RS | RS | |
-| 118 | Plotly/GT | GT | |
-| 119 | EMA/AV | AV | |
-| 121 | Analysis/RS | RS | |
-| 122 | Correlation\RT | unassigned | ⚠ should be RS+GT |
-| 124 | README/EB | EB | |
-| 125 | [PHASE-2] Week5 Notion/ShS | ShS | |
-| 126 | [PHASE-2] Varsity Module 2/SS | SS | |
-| 127 | [PHASE-2] Add RSI indicators | RT | |
-| 128 | [PHASE-2] Add MACD indicator | AV | |
-| 190 | [PHASE-2] Analysis/GT | GT | |
-| 191 | [PHASE-2] Pandas/SS | SS | |
-| 192 | [PHASE-2] SMA/SS | SS | |
-| 196 | [PHASE-2] README/ShS | ShS | |
-| 261 | RSI/RT | unassigned | ⚠ RT's notebook section |
-| 265 | RSI/SS | SS | |
-
-### Open Issues — Phase 3 Backlog (35 open)
+### Open Issues — Phase 2 (1 open)
 
 | # | Title | Assignee |
 | --- | ----- | -------- |
-| 31 | Write strategy spec document | GT |
-| 32 | Implement SMA crossover strategy | GT |
-| 34 | Run backtest with vectorbt | AV |
+| 263 | SMA/AJ — orphaned, target notebook removed by repo trim | AJ |
+
+### Open Issues — Phase 3 (5 open)
+
+| # | Title | Assignee |
+| --- | ----- | -------- |
+| 34 | Run backtest with vectorbt | AV, GT |
 | 35 | Add realistic costs to backtest | AV |
-| 36 | Document backtest results | EB |
-| 37 | Update README — backtest results | EB |
+| 36 | Document backtest results | SmS |
+| 37 | Update README — backtest results | SmS |
 | 38 | Write Decisions Log — strategy choices | RS |
-| 200 | indicators.py — EMA, RSI, MACD, ATR, VWAP | AV |
-| 201 | validate.py — gap detection, holiday handling, bad ticks | GT |
-| 202 | ticker_map.py — NIFTY50 name→yfinance+DhanID | RS |
-| 203 | visualise.py — interactive chart helpers | GT |
-| 204 | screener/engine.py — AND/OR filter composition | AR |
-| 205 | screener/runner.py — load config, fetch, run engine | AR |
-| 206 | screener/config.py — ScreenerConfig dataclass | GT |
-| 207 | screener/cache.py — JSON cache keyed by config+date | SmS |
-| 208 | screener/filters — technical and fundamental | AV |
-| 209 | watchlist system — static, dynamic, persistence | AR |
-| 210 | strategy/base.py and signals.py — ABC and Signal dataclass | AV |
-| 211 | strategy/rsi_mean_reversion.py | AV |
-| 212 | strategy/runner.py — run strategy against tickers | GT |
-| 221 | {PHASE-3} EMA indicator/AV | AV |
-| 222 | {PHASE-3} RSI indicator/AV | AV |
-| 223 | {PHASE-3} MACD indicator/AV | AV |
-| 224 | {PHASE-3} ATR indicator/AV | AV |
-| 225 | {PHASE-3} VWAP indicator/AV | AV |
-| 226 | {PHASE-3} holiday_calendar/GT | GT |
-| 227 | {PHASE-3} gap_detection/AR | AR |
-| 228 | {PHASE-3} bad_tick_filter/AR | AR |
-| 229 | {PHASE-3} stale_data_check/AR | AR |
-| 230 | {PHASE-3} candlestick_ema/AR | AR |
-| 231 | {PHASE-3} macd_subplot/AR | AR |
-| 232 | {PHASE-3} rsi_subplot/AR | AR |
-| 233 | {PHASE-3} volume_chart/AR | AR |
-| 234 | {PHASE-3} technical_filters/AV | AV |
-| 235 | {PHASE-3} fundamental_filters/AV | AV |
-| 236 | {PHASE-3} strategy_base/GT | GT |
-| 237 | {PHASE-3} signals_dataclass/AV | AV |
-| 238 | {PHASE-3} static_watchlist/SmS | SmS |
-| 239 | {PHASE-3} dynamic_watchlist/SmS | SmS |
-| 240 | {PHASE-3} watchlist_persistence/SmS | SmS |
-| 241 | {PHASE-3} watchlist_manager/AR | AR |
-| 263 | SMA/GT | GT |
 
-### Open Issues — Phase 4 Backlog (13 open)
+### Open Issues — Phase 4 (14 open)
 
 | # | Title | Assignee |
 | --- | ----- | -------- |
-| 39 | Open Dhan account + generate API token | unassigned |
-| 40 | Dhan API authentication | unassigned |
-| 41 | Build WebSocket live tick connection | unassigned |
-| 42 | Build signal execution loop | unassigned |
-| 43 | Build trade log (CSV) | unassigned |
-| 44 | Discord webhook alert on signal | unassigned |
-| 45 | Run 3 live paper trading sessions | unassigned |
-| 46 | Build Streamlit dashboard | unassigned |
-| 47 | Validate live signals vs backtest | unassigned |
-| 48 | Write Notion log — Weeks 10 & 11 | unassigned |
-| 213 | dhan_client.py — authenticated Dhan wrapper + rate limit | AR |
+| 39 | Open Dhan account + generate API token | RS |
+| 40 | Dhan API authentication | AR |
+| 41 | Build WebSocket live tick connection | AR |
+| 42 | Build signal execution loop | GT, AR |
+| 43 | Build trade log (CSV) | AR |
+| 44 | Discord webhook alert on signal | RS |
+| 45 | Run 3 live paper trading sessions | RS, GT |
+| 46 | Build Streamlit dashboard | EB |
+| 47 | Validate live signals vs backtest | AV, GT |
+| 48 | Write Notion log — Weeks 10 & 11 | EB |
 | 214 | websocket_feed.py — live tick feed with auto-reconnect | AR |
-| 215 | logger.py — paper trade signal log to CSV | AR |
-| 216 | order_manager.py — v0.0.2 scaffold | AR |
+| 215 | logger.py — paper trade signal log to CSV — PR #343 approved, awaiting merge | AR, AK |
+| 216 | order_manager.py — v0.0.2 scaffold — PR #348 changes requested (missing docstrings) | AR, RT |
 | 217 | integration test scaffold — end-to-end signal pipeline | RS |
 
-### Open Issues — Phase 5 Backlog (16 open)
+### Open Issues — Phase 5 (17 open)
 
 | # | Title | Assignee |
 | --- | ----- | -------- |
-| 49 | Final code clean-up — add all docstrings | unassigned |
-| 50 | Final README — all sections complete | unassigned |
-| 51 | Deploy Streamlit dashboard | unassigned |
-| 52 | Run public repo checklist | RS |
-| 53 | Record 2-minute demo video | unassigned |
-| 54 | Write LinkedIn wrap post draft | unassigned |
-| 55 | Notion final project summary | unassigned |
+| 49 | Final code clean-up — add all docstrings | RS |
+| 50 | Final README — all sections complete | EB |
+| 51 | Deploy Streamlit dashboard | EB |
+| 52 | Run public repo checklist — likely duplicate of #248 (that one has the full checklist body, sub-issue of #220) | RS |
+| 53 | Record 2-minute demo video | RS |
+| 54 | Write LinkedIn wrap post draft | RS |
+| 55 | Notion final project summary | EB |
 | 218 | dashboard/app.py — 5-page Streamlit skeleton | EB |
-| 219 | docs/architecture.md — full system diagram | EB |
-| 220 | Streamlit Cloud deploy + public repo checklist | RS |
+| 219 | docs/architecture.md — full system diagram and module map | EB |
+| 220 | Streamlit Cloud deploy + public repo checklist | RS, EB |
 | 242 | {PHASE-5} screener_page/EB | EB |
 | 243 | {PHASE-5} watchlists_page/EB | EB |
 | 244 | {PHASE-5} strategy_page/EB | EB |
@@ -542,42 +471,24 @@ Phase 2 deliverable: `notebooks/market_analysis.ipynb` — group NIFTY50 analysi
 | 247 | {PHASE-5} streamlit_deploy/EB | EB |
 | 248 | {PHASE-5} public_repo_checklist/RS | RS |
 
-### Closed Issues — Summary (96 closed)
+### Closed Issues — Summary (175 closed)
 
 | Phase | Count | Notes |
 | ----- | ----- | ----- |
-| Phase-0 | ~65 | Per-member onboarding — clone, git, varsity, discord, branch creation |
-| Phase-1 | ~17 | Setup, scripts, analysis, webhook, GitHub Pages, housekeeping |
-| Phase-2 | 3 | Fetch/RS (#120), notebook skeleton (#199), Varsity 1/EB (#123) |
-| Misc | 1 | RSI/RT (#260) duplicate, closed |
+| Phase-0 | 72 | Per-member onboarding — clone, git, varsity, discord, branch creation |
+| Phase-1 | 18 | Setup, scripts, analysis, webhook, GitHub Pages, housekeeping |
+| Phase-2 | 49 | Indicators, notebook sections, README/Notion updates — notebook itself later removed as scaffolding |
+| Phase-3 | 28 | Indicators (EMA/RSI/MACD/ATR/VWAP), validate.py, visualise.py, screener config/engine/runner/filters (#208), ticker_map, correlation, watchlist system (#209), strategy spec (#31) |
+| Misc | 8 | Duplicates and non-phase-tagged housekeeping |
 
 **⚠ Attention items:**
+- `#263` — orphaned, empty body, no discussion; target notebook removed by the repo trim (PR #351). Needs a close-with-note or scope redefinition.
+- `#52` — likely duplicate of `#248` (same "public repo checklist" task; #248 has the real checklist body and is linked as a sub-issue of #220).
+- Strategy spec content (`docs/strategyspec_GT.md` vs `docs/strategyspec_AV.md`) unreconciled — both merged under #31, AV's doc introduces Ichimoku Cloud (not in confirmed tech stack) and uses prose format instead of the config-driven ST1 spec.
 
-- `#122 Correlation\RT` — unassigned; should be RS+GT per notebook plan (section 13)
-- `#261 RSI/RT` — unassigned; RT's notebook section needs assignment
-- `#28`, `#29`, `#30` — all unassigned docs tasks (Notion log, README, Streamlit basics)
+### Notebook Section Order (historical — Phase 2, removed)
 
-### Notebook Section Order — `notebooks/market_analysis.ipynb`
-
-Sector-grouped. RS + GT own section 13 (correlation heatmap).
-
-| # | Sector | Ticker | Member |
-| --- | ------ | ------ | ------ |
-| 1 | Energy/Conglomerate | RELIANCE.NS | AJ |
-| 2 | IT | TCS.NS | AV |
-| 3 | IT | INFY.NS | AK |
-| 4 | IT | HCLTECH.NS | SS |
-| 5 | Banking | HDFCBANK.NS | AR |
-| 6 | Banking | ICICIBANK.NS | EB |
-| 7 | Banking | AXISBANK.NS | ShS |
-| 8 | Auto | TVS.NS | RS |
-| 9 | Auto | M&M.NS | GT |
-| 10 | Infrastructure | LT.NS | RT |
-| 11 | Consumer | TITAN.NS | NS |
-| 12 | Defense | APOLLO.NS | SmS |
-| 13 | Cross-sector | Correlation heatmap | RS + GT |
-
-**Member section template:** fetch → summary stats → candlestick + EMA20/50 → MACD → RSI → volume. Fundamentals via `yf.Ticker.info` with None-guards: P/E, EPS growth, D/E, Cash/Debt, ICR, PEG (5Y+1Y), reserve & surplus, promoter%, pledged shares%, dividend yield. End with 3–5 sentence observation.
+`notebooks/market_analysis.ipynb` removed post-Phase-2 as non-essential scaffolding. Section order/ownership record kept here for history only; no longer applicable.
 
 ---
 
@@ -1007,6 +918,8 @@ Maintain shared draft doc in Notion where teammates review LinkedIn posts before
 
 ## 16. Going Public — Week 8–9 Checklist
 
+**Status: repo is already Public** (switched during Phase 3, ~Week 7 — earlier than the original Week 8–9 target). Checklist below kept as the audit standard; confirm each item retroactively rather than assuming it was done before the switch.
+
 Before switching repo from private to public:
 
 - [ ] Search entire repo for `token`, `key`, `secret`, `password` — zero results
@@ -1118,7 +1031,7 @@ Severity tags: `BLOCKING` (merge must not proceed), `CONCERN` (needs discussion 
 
 ### When Generating New Modules
 
-**Phase 1 scripts go in `scripts/<handle>.py` — not in `src/`.** Lower bar applies: no mandatory docstrings or type hints, no `if __name__ == "__main__"` required. Still required: `.NS` suffix on NSE tickers, no hardcoded credentials, `logging` not `print()`.
+`scripts/` (Phase 1 individual analysis scripts) removed post-Phase-2 as non-essential scaffolding. All new code goes in `src/`.
 
 For `src/` modules (Phase 3+):
 
