@@ -144,7 +144,7 @@ pandocfilters==1.5.1
 parso==0.8.7
 pdf2image==1.17.0
 peewee==4.0.5
-pillow==12.2.0
+pillow==12.3.0
 platformdirs==4.9.6
 pluggy==1.6.0
 prometheus_client==0.25.0
