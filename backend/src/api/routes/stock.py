@@ -31,21 +31,22 @@ def get_stock_info(symbol: str):
             ticker_sym += ".NS"
             
         ticker = yf.Ticker(ticker_sym)
-        info = ticker.info
+        # Use fast_info because .info often hangs on cloud servers due to Yahoo Finance scraping blocks
+        f_info = ticker.fast_info
         
         return StockInfo(
             symbol=symbol,
-            name=info.get("longName", symbol),
-            sector=info.get("sector"),
-            industry=info.get("industry"),
-            market_cap=info.get("marketCap"),
-            pe_ratio=info.get("trailingPE") or info.get("forwardPE"),
-            dividend_yield=info.get("dividendYield"),
-            fifty_two_week_high=info.get("fiftyTwoWeekHigh"),
-            fifty_two_week_low=info.get("fiftyTwoWeekLow"),
-            description=info.get("longBusinessSummary"),
-            previous_close=info.get("previousClose"),
-            current_price=info.get("currentPrice") or info.get("regularMarketPrice"),
+            name=symbol,
+            sector=None,
+            industry=None,
+            market_cap=f_info.get("marketCap"),
+            pe_ratio=None,
+            dividend_yield=None,
+            fifty_two_week_high=f_info.get("yearHigh"),
+            fifty_two_week_low=f_info.get("yearLow"),
+            description=None,
+            previous_close=f_info.get("previousClose"),
+            current_price=f_info.get("lastPrice"),
         )
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Failed to fetch info for {symbol}: {str(e)}")
