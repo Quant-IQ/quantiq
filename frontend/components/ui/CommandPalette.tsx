@@ -104,6 +104,7 @@ export default function CommandPalette() {
                       key={ticker.symbol}
                       onClick={() => {
                         setIsOpen(false);
+                        router.push(`/stock/${ticker.symbol.replace('.NS', '')}`);
                       }}
                       className="w-full flex items-center justify-between px-3 py-3 rounded-lg hover:bg-white/5 transition-colors group text-left"
                     >

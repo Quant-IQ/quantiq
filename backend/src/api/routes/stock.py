@@ -7,12 +7,18 @@ from src.data.fetch import fetch_ohlc
 
 router = APIRouter(prefix="/stock", tags=["stock"])
 
+SYMBOL_MAP = {
+    "NIFTY50": "^NSEI",
+    "SENSEX": "^BSESN",
+    "BANKNIFTY": "^NSEBANK"
+}
+
 class StockInfo(BaseModel):
     symbol: str
     name: str
     sector: Optional[str] = None
     industry: Optional[str] = None
-    market_cap: Optional[int] = None
+    market_cap: Optional[float] = None
     pe_ratio: Optional[float] = None
     dividend_yield: Optional[float] = None
     fifty_two_week_high: Optional[float] = None
@@ -26,14 +32,15 @@ def get_stock_info(symbol: str):
     try:
         # Use existing logic from fetch.py for suffixing if needed, but yf.Ticker does not auto-suffix.
         # We will assume frontend sends the raw symbol (e.g., RELIANCE) and we append .NS if missing.
-        ticker_sym = symbol
+        mapped_symbol = SYMBOL_MAP.get(symbol.upper(), symbol)
+        ticker_sym = mapped_symbol
         if not ticker_sym.startswith("^") and not (ticker_sym.endswith(".NS") or ticker_sym.endswith(".BO")):
             ticker_sym += ".NS"
-            
+
         ticker = yf.Ticker(ticker_sym)
         # Use fast_info because .info often hangs on cloud servers due to Yahoo Finance scraping blocks
         f_info = ticker.fast_info
-        
+
         return StockInfo(
             symbol=symbol,
             name=symbol,
@@ -53,7 +60,7 @@ def get_stock_info(symbol: str):
 
 @router.get("/{symbol}/chart")
 def get_stock_chart(
-    symbol: str, 
+    symbol: str,
     range: str = Query("1y", description="Time range (e.g. 1d, 1w, 1m, 1y, 5y)"),
     interval: str = Query(None, description="Data interval (e.g. 1m, 15m, 1d, 1wk)")
 ):
@@ -81,20 +88,21 @@ def get_stock_chart(
     else:
         period = range
 
-    df = fetch_ohlc(symbol, period=period, interval=interval)
+    mapped_symbol = SYMBOL_MAP.get(symbol.upper(), symbol)
+    df = fetch_ohlc(mapped_symbol, period=period, interval=interval)
     if df is None or df.empty:
         raise HTTPException(status_code=404, detail=f"No chart data found for {symbol}")
-    
+
     # Format data for lightweight-charts
     # lightweight-charts expects time (unix timestamp or string YYYY-MM-DD)
     # and open, high, low, close, value (volume)
     result = []
-    
+
     # If index is timezone aware, convert to UTC then to timestamp
     for date, row in df.iterrows():
         # Get timestamp in seconds
         ts = int(date.timestamp())
-        
+
         result.append({
             "time": ts,
             "open": row["Open"],
@@ -103,5 +111,5 @@ def get_stock_chart(
             "close": row["Close"],
             "value": row["Volume"],
         })
-        
+
     return {"data": result}

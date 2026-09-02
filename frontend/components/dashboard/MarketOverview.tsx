@@ -73,9 +73,6 @@ export default function MarketOverview() {
         className="flex items-center justify-between p-3 -mx-3 rounded-xl hover:bg-white/5 transition-all duration-300 hover:translate-x-1 cursor-pointer group"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-black/40 border border-white/5 flex items-center justify-center font-bold text-white shadow-inner group-hover:border-white/20 transition-colors">
-            {initial}
-          </div>
           <span className="font-bold text-sm text-white transition-colors">{stock.symbol}</span>
         </div>
         
