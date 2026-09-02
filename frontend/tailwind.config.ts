@@ -11,12 +11,12 @@ const config: Config = {
         bg: "#0A0E13",
         panel: "#141A21",
         panelBorder: "#232D37",
-        accent: "#22C55E",
-        textPrimary: "#E8EDF2",
+        accent: "#4ADE80", // Logo vibrant green
+        textPrimary: "#F1F5F9", // Logo white/gray text
         textMuted: "#8B98A5",
-        info: "#4C8DFF",
-        warn: "#F5934C",
-        negative: "#F0665E",
+        info: "#3B82F6",
+        warn: "#F59E0B",
+        negative: "#EF4444",
       },
       fontFamily: {
         heading: ["Sora", "sans-serif"],

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
+  { href: "/", label: "Dashboard" },
+  { href: "/screener", label: "Screener" },
   { href: "/backtest", label: "Backtest Report" },
   { href: "/live", label: "Live Signals" },
 ];
