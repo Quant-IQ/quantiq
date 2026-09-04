@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QuantIQ — Algorithmic Trading System</title>
-<meta name="description" content="12-week collaborative algorithmic trading system targeting NSE Indian equity market.">
+<meta name="description" content="Algorithmic trading infrastructure for the Indian equity market — screener, watchlists, live market data, and strategy backtesting, built on the Dhan API.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -288,83 +288,6 @@
     letter-spacing: 1px;
   }
 
-  /* ── Phase track ── */
-  .phases-section {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 0 40px 80px;
-    opacity: 0;
-    animation: fadeUp 0.6s ease forwards 1s;
-  }
-
-  .section-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    margin-bottom: 24px;
-  }
-
-  .phase-track {
-    display: flex;
-    gap: 8px;
-    align-items: stretch;
-  }
-
-  .phase-item {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 16px 14px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s;
-  }
-
-  .phase-item:hover { border-color: var(--muted); }
-
-  .phase-item::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-
-  .phase-0::before { background: var(--green); }
-  .phase-1::before { background: var(--blue); }
-  .phase-2::before { background: var(--orange); }
-  .phase-3::before { background: var(--purple); }
-  .phase-4::before { background: var(--pink); }
-
-  .phase-done::after {
-    content: '✓';
-    position: absolute;
-    top: 10px; right: 10px;
-    font-size: 10px;
-    color: var(--green);
-    font-family: 'Space Mono', monospace;
-  }
-
-  .phase-active {
-    border-color: var(--green);
-  }
-
-  .phase-num {
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    color: var(--muted);
-    margin-bottom: 6px;
-  }
-
-  .phase-name {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1.3;
-  }
-
   /* ── Footer ── */
   footer {
     border-top: 1px solid var(--border);
@@ -411,9 +334,7 @@
     .stat { border-right: none; border-bottom: 1px solid var(--border); padding: 0 0 24px; }
     .stat:last-child { border-bottom: none; padding-bottom: 0; }
     .stat:not(:first-child) { padding-left: 0; }
-    .phase-track { flex-direction: column; }
     .section-divider { margin: 0 20px; }
-    .phases-section { padding: 0 20px 60px; }
     footer { padding: 20px; flex-direction: column; gap: 8px; text-align: center; }
     .btn-group { flex-direction: column; }
     .btn { justify-content: center; }
@@ -428,7 +349,7 @@
   <div class="nav-brand">Quant<span>IQ</span></div>
   <div class="nav-status">
     <div class="status-dot"></div>
-    In Progress — Week 2
+    v0.1 · Preview
   </div>
 </nav>
 
@@ -441,8 +362,9 @@
     <div class="hero-tagline">Build.&nbsp;&nbsp;Backtest.&nbsp;&nbsp;Deploy.</div>
 
     <p class="hero-desc">
-      A <strong>12-week collaborative</strong> algorithmic trading system targeting the Indian stock market.
-      Strategy design → backtesting → live paper trading via Dhan API.
+      Algorithmic trading infrastructure for the Indian equity market —
+      <strong>screener, watchlists, live market data, and strategy backtesting</strong>,
+      built on the Dhan API.
     </p>
 
     <div class="btn-group">
@@ -454,37 +376,27 @@
         GitHub
       </a>
 
-      <!-- Docs: disabled -->
-      <span class="btn btn-disabled">
+      <a href="https://github.com/Quant-IQ/quantiq/blob/main/docs/architecture.md" target="_blank" rel="noopener" class="btn btn-ghost">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
         </svg>
         Docs
-      </span>
+      </a>
 
-      <!-- Dashboard: disabled -->
-      <span class="btn btn-disabled">
+      <a href="https://app.quant-iq.net" target="_blank" rel="noopener" class="btn btn-ghost">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
           <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
         </svg>
         Dashboard
-      </span>
+      </a>
     </div>
   </section>
 
   <hr class="section-divider">
 
   <div class="stats">
-    <div class="stat">
-      <div class="stat-value">12</div>
-      <div class="stat-label">Weeks</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">5</div>
-      <div class="stat-label">Phases</div>
-    </div>
     <div class="stat">
       <div class="stat-value">NSE</div>
       <div class="stat-label">Target Market</div>
@@ -493,35 +405,15 @@
       <div class="stat-value">Dhan</div>
       <div class="stat-label">Broker API</div>
     </div>
-  </div>
-
-  <hr class="section-divider">
-
-  <section class="phases-section" style="padding-top: 48px;">
-    <div class="section-label">Project Phases</div>
-    <div class="phase-track">
-      <div class="phase-item phase-0 phase-done">
-        <div class="phase-num">Phase 0</div>
-        <div class="phase-name">Onboarding</div>
-      </div>
-      <div class="phase-item phase-1 phase-active">
-        <div class="phase-num">Phase 1</div>
-        <div class="phase-name">Foundations</div>
-      </div>
-      <div class="phase-item phase-2">
-        <div class="phase-num">Phase 2</div>
-        <div class="phase-name">Data & Analysis</div>
-      </div>
-      <div class="phase-item phase-3">
-        <div class="phase-num">Phase 3</div>
-        <div class="phase-name">Backtesting</div>
-      </div>
-      <div class="phase-item phase-4">
-        <div class="phase-num">Phase 4</div>
-        <div class="phase-name">Paper Trading</div>
-      </div>
+    <div class="stat">
+      <div class="stat-value">Python</div>
+      <div class="stat-label">Core Stack</div>
     </div>
-  </section>
+    <div class="stat">
+      <div class="stat-value">OSS</div>
+      <div class="stat-label">Open Source</div>
+    </div>
+  </div>
 </main>
 
 <footer>
