@@ -250,6 +250,7 @@ src/data/watchlists/*
 !src/data/watchlists/.gitkeep
 *.pkl
 *.csv
+**/data/cache/**/*.parquet
 
 # History files
 .history
