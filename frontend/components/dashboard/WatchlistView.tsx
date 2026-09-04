@@ -35,8 +35,8 @@ export default function WatchlistView({ watchlistName }: { watchlistName: string
         {loading && <LoadingState message="Fetching live market data..." />}
         
         {data && (
-          <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl">
-            <table className="w-full text-sm">
+          <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl overflow-x-auto">
+            <table className="w-full text-sm min-w-[700px]">
               <thead>
                 <tr className="border-b border-[var(--color-panel-border)] bg-black/40 text-[var(--color-text-dim)] text-left select-none text-xs uppercase tracking-wider font-semibold">
                   <th className="p-4 pl-6">Symbol</th>

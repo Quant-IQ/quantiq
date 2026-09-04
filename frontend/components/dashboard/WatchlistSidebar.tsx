@@ -47,7 +47,7 @@ export default function WatchlistSidebar({
   ];
 
   return (
-    <div className="w-[300px] border-r border-[var(--color-panel-border)] flex flex-col glass-panel h-full shadow-2xl">
+    <div className="hidden md:flex w-[300px] border-r border-[var(--color-panel-border)] flex-col glass-panel h-full shadow-2xl shrink-0 z-20">
       {/* Brand */}
       <div className="p-6 border-b border-[var(--color-panel-border)] flex items-center gap-1">
         <h1 className="font-heading font-extrabold text-3xl tracking-tight leading-none">

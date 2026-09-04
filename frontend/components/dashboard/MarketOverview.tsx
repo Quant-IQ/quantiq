@@ -177,7 +177,7 @@ export default function MarketOverview() {
            </div>
 
            {/* Bottom Row of Left Column */}
-           <div className="grid grid-cols-2 gap-6 mt-2">
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-2">
              {/* Market Breadth Panel */}
              <div className="bg-[#161B22] border border-white/5 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
                 <div className="flex items-center justify-between mb-6">

@@ -37,7 +37,7 @@ export default function IndicesStrip() {
                 <span className="font-bold text-[11px] text-[var(--color-text-dim)] tracking-widest uppercase">{idx.name}</span>
                 <span className="text-white font-mono tabular-nums text-[13px] font-bold">{idx.value.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 <span className={`font-mono tabular-nums text-xs font-bold ${isPos ? "text-[var(--color-accent-green)]" : "text-[#F0665E]"}`}>
-                  {isPos ? "+" : ""}{idx.change.toFixed(2)}%
+                  {isPos ? "+" : ""}{idx.change.toFixed(2)}
                 </span>
               </div>
             );
@@ -46,7 +46,7 @@ export default function IndicesStrip() {
       </div>
       
       {/* Action Cluster (Search, Notifications, Profile) */}
-      <div className="flex items-center gap-6 px-6 h-full bg-[var(--color-bg-dark)] z-10 relative shrink-0">
+      <div className="flex items-center gap-3 sm:gap-6 px-3 sm:px-6 h-full bg-[var(--color-bg-dark)] z-10 relative shrink-0">
         <button 
           onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
           className="text-[var(--color-text-dim)] hover:text-white transition-colors"
