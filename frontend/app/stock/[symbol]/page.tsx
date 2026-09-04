@@ -12,7 +12,7 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 export default function StockDetailPage({ params }: { params: Promise<{ symbol: string }> }) {
   const router = useRouter();
   const unwrappedParams = use(params);
-  const symbol = unwrappedParams.symbol.toUpperCase();
+  const symbol = decodeURIComponent(unwrappedParams.symbol).toUpperCase();
   
   const [info, setInfo] = useState<StockInfo | null>(null);
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
@@ -68,12 +68,18 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
         </button>
         <div className="flex flex-col">
            <h1 className="font-bold text-white text-xl tracking-tight">{info.name}</h1>
-           <div className="flex items-center gap-2 text-xs text-[var(--color-text-dim)] uppercase tracking-wider font-semibold">
+           <div className="flex items-center gap-2 text-xs text-[var(--color-text-dim)] uppercase tracking-wider font-semibold flex-wrap">
               <span>{info.symbol}</span>
               {info.sector && (
                  <>
                    <span>•</span>
                    <span>{info.sector}</span>
+                 </>
+              )}
+              {info.industry && (
+                 <>
+                   <span>•</span>
+                   <span>{info.industry}</span>
                  </>
               )}
            </div>
@@ -103,10 +109,24 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
                  </div>
                </div>
                
-               <div className="flex items-start justify-between pb-2">
+               <div className="flex items-start justify-between border-b border-[var(--color-panel-border)] pb-6">
                  <div>
                     <div className="text-[var(--color-text-dim)] text-xs font-semibold uppercase tracking-wider mb-1">Div Yield</div>
                     <div className="text-white font-medium">{info.dividend_yield ? `${(info.dividend_yield * 100).toFixed(2)}%` : "N/A"}</div>
+                 </div>
+               </div>
+
+               <div className="flex items-start justify-between border-b border-[var(--color-panel-border)] pb-6">
+                 <div>
+                    <div className="text-[var(--color-text-dim)] text-xs font-semibold uppercase tracking-wider mb-1">52W High</div>
+                    <div className="text-white font-medium">{info.fifty_two_week_high ? `₹${info.fifty_two_week_high.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "N/A"}</div>
+                 </div>
+               </div>
+
+               <div className="flex items-start justify-between pb-2">
+                 <div>
+                    <div className="text-[var(--color-text-dim)] text-xs font-semibold uppercase tracking-wider mb-1">52W Low</div>
+                    <div className="text-white font-medium">{info.fifty_two_week_low ? `₹${info.fifty_two_week_low.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "N/A"}</div>
                  </div>
                </div>
             </div>

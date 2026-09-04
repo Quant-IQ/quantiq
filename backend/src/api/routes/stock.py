@@ -27,6 +27,16 @@ class StockInfo(BaseModel):
     previous_close: Optional[float] = None
     current_price: Optional[float] = None
 
+import concurrent.futures
+
+def get_ticker_info_safe(ticker):
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(lambda: ticker.info)
+            return future.result(timeout=3.0)
+    except Exception:
+        return {}
+
 @router.get("/{symbol}/info", response_model=StockInfo)
 def get_stock_info(symbol: str):
     try:
@@ -38,22 +48,24 @@ def get_stock_info(symbol: str):
             ticker_sym += ".NS"
 
         ticker = yf.Ticker(ticker_sym)
-        # Use fast_info because .info often hangs on cloud servers due to Yahoo Finance scraping blocks
+        # fast_info is reliable but lacks detailed metadata (PE, description, etc.)
         f_info = ticker.fast_info
+        # Attempt to get full info with a timeout to prevent hanging on cloud servers
+        info = get_ticker_info_safe(ticker)
 
         return StockInfo(
             symbol=symbol,
-            name=symbol,
-            sector=None,
-            industry=None,
-            market_cap=f_info.get("marketCap"),
-            pe_ratio=None,
-            dividend_yield=None,
-            fifty_two_week_high=f_info.get("yearHigh"),
-            fifty_two_week_low=f_info.get("yearLow"),
-            description=None,
-            previous_close=f_info.get("previousClose"),
-            current_price=f_info.get("lastPrice"),
+            name=info.get("longName", symbol),
+            sector=info.get("sector"),
+            industry=info.get("industry"),
+            market_cap=info.get("marketCap") or f_info.get("marketCap"),
+            pe_ratio=info.get("trailingPE") or info.get("forwardPE"),
+            dividend_yield=info.get("dividendYield"),
+            fifty_two_week_high=f_info.get("yearHigh") or info.get("fiftyTwoWeekHigh"),
+            fifty_two_week_low=f_info.get("yearLow") or info.get("fiftyTwoWeekLow"),
+            description=info.get("longBusinessSummary"),
+            previous_close=f_info.get("previousClose") or info.get("previousClose"),
+            current_price=f_info.get("lastPrice") or info.get("currentPrice") or info.get("regularMarketPrice"),
         )
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Failed to fetch info for {symbol}: {str(e)}")
