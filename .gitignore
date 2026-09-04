@@ -149,12 +149,19 @@ activemq-data/
 # SageMath parsed files
 *.sage.py
 
-# Environments
+# Environments & Secrets
 .env
+.env.*
+!.env.example
+!.env*.example
 .envrc
-.venv
-env/
+.venv/
+.venv*/
 venv/
+venv*/
+**/venv*/
+**/.venv*/
+env/
 ENV/
 env.bak/
 venv.bak/
@@ -246,3 +253,15 @@ src/data/watchlists/*
 
 # History files
 .history
+
+# Node & Next.js
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+out/
+**/out/
+*.tsbuildinfo
+.vercel/
+**/.vercel/
+
